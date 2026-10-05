@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "drf_spectacular",
     # Apps propias
+    "apps.accounts",
 ]
 
 MIDDLEWARE = [
@@ -66,6 +67,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+
+AUTH_USER_MODEL = "accounts.User"
 
 
 # si no hay DATABASE_URL usa sqlite
