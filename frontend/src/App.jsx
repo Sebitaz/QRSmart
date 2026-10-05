@@ -7,6 +7,7 @@ import { useAuth } from './context/auth-context'
 import AttendeeHomePage from './pages/asistente/AttendeeHomePage'
 import LoginPage from './pages/LoginPage'
 import StaffHomePage from './pages/logistica/StaffHomePage'
+import CreateEventPage from './pages/organizador/CreateEventPage'
 import OrganizerHomePage from './pages/organizador/OrganizerHomePage'
 import RegisterPage from './pages/RegisterPage'
 
@@ -24,6 +25,7 @@ function App() {
         <Route element={<AppLayout />}>
           <Route element={<ProtectedRoute allowedRoles={[ROLES.ORGANIZADOR]} />}>
             <Route path="/organizador" element={<OrganizerHomePage />} />
+            <Route path="/organizador/eventos/nuevo" element={<CreateEventPage />} />
           </Route>
           <Route element={<ProtectedRoute allowedRoles={[ROLES.LOGISTICA]} />}>
             <Route path="/logistica" element={<StaffHomePage />} />
