@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import FormField from '../components/FormField'
+import { homeForRole } from '../constants/roles'
 import { useAuth } from '../context/auth-context'
 
 export default function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -17,8 +19,8 @@ export default function LoginPage() {
     setError('')
     setSubmitting(true)
     try {
-      await login(form.email, form.password)
-      navigate('/', { replace: true })
+      const user = await login(form.email, form.password)
+      navigate(location.state?.from ?? homeForRole(user.role), { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {

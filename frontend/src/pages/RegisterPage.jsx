@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import FormField from '../components/FormField'
+import { homeForRole } from '../constants/roles'
 import { useAuth } from '../context/auth-context'
 
 const INITIAL_FORM = {
@@ -32,8 +33,8 @@ export default function RegisterPage() {
     }
     setSubmitting(true)
     try {
-      await register(form)
-      navigate('/', { replace: true })
+      const user = await register(form)
+      navigate(homeForRole(user.role), { replace: true })
     } catch (err) {
       setErrors(err.fieldErrors ?? {})
       setError(err.status === 400 ? 'Revisa los datos del formulario.' : err.message)
