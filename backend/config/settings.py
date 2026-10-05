@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     # Apps propias
     "apps.accounts",
     "apps.events",
+    "apps.tickets",
 ]
 
 MIDDLEWARE = [
