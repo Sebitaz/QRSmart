@@ -17,7 +17,8 @@ Cada carpeta tiene su propio README con instrucciones para ejecutarla:
 ```bash
 # Terminal 1 - API
 cd backend
-python -m venv .venv && .venv\Scriptsctivate   # macOS/Linux: source .venv/bin/activate
+python -m venv .venv
+.venv\Scripts\Activate.ps1        # Windows PowerShell (macOS/Linux: source .venv/bin/activate)
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
