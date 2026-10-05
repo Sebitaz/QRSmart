@@ -123,3 +123,71 @@ class EventCreationTests(APITestCase):
         response = self.client.get(reverse("events:detail", args=[event.pk]))
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class EventAuthorizationTests(APITestCase):
+    """HU 4.3: solo los organizadores pueden usar los endpoints de eventos."""
+
+    url = reverse("events:list-create")
+    password = "ClaveSegura#2026"
+
+    def setUp(self):
+        self.organizer = self.make_user("org@example.com", User.Role.ORGANIZADOR)
+        self.cliente = self.make_user("cliente@example.com", User.Role.ASISTENTE)
+        self.logistica = self.make_user("log@example.com", User.Role.LOGISTICA)
+        start = timezone.now() + timedelta(days=7)
+        self.payload = {
+            "name": "Concierto", "location": "Estadio", "capacity": 100,
+            "start_at": start.isoformat(), "end_at": (start + timedelta(hours=3)).isoformat(),
+        }
+
+    def make_user(self, email, role):
+        return User.objects.create_user(
+            email=email, password=self.password, first_name="Test", last_name="User", role=role
+        )
+
+    def test_cliente_cannot_create_event(self):
+        self.client.force_authenticate(self.cliente)
+        response = self.client.post(self.url, self.payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(Event.objects.exists())
+
+    def test_logistica_cannot_create_event(self):
+        self.client.force_authenticate(self.logistica)
+        response = self.client.post(self.url, self.payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(Event.objects.exists())
+
+    def test_non_organizers_cannot_list_or_retrieve(self):
+        start = timezone.now() + timedelta(days=1)
+        event = Event.objects.create(
+            organizer=self.organizer, name="Privado", location="X",
+            start_at=start, end_at=start + timedelta(hours=1), capacity=10,
+        )
+        for user in (self.cliente, self.logistica):
+            self.client.force_authenticate(user)
+            with self.subTest(role=user.role):
+                self.assertEqual(self.client.get(self.url).status_code, status.HTTP_403_FORBIDDEN)
+                detail = self.client.get(reverse("events:detail", args=[event.pk]))
+                self.assertEqual(detail.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_cliente_with_real_jwt_gets_403(self):
+        login = self.client.post(
+            reverse("accounts:login"),
+            {"email": self.cliente.email, "password": self.password},
+            format="json",
+        )
+        self.assertEqual(login.status_code, status.HTTP_200_OK)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
+
+        response = self.client.post(self.url, self.payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_organizer_can_create_event(self):
+        self.client.force_authenticate(self.organizer)
+        response = self.client.post(self.url, self.payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
