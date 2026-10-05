@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     # Apps propias
     "apps.accounts",
+    "apps.events",
 ]
 
 MIDDLEWARE = [
