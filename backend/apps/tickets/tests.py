@@ -100,3 +100,125 @@ class TicketValidationTests(APITestCase):
         response = self.client.post(self.url, {"code": "no-es-un-uuid"}, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class TicketPurchaseBase(APITestCase):
+    url = reverse("tickets:list-create")
+    password = "ClaveSegura#2026"
+
+    def setUp(self):
+        self.organizer = self.make_user("org2@example.com", User.Role.ORGANIZADOR)
+        self.cliente = self.make_user("ana@example.com", User.Role.ASISTENTE)
+        self.event = self.make_event(capacity=2)
+        self.client.force_authenticate(self.cliente)
+
+    def make_user(self, email, role):
+        return User.objects.create_user(
+            email=email, password=self.password, first_name="Test", last_name="User", role=role
+        )
+
+    def make_event(self, capacity=10, starts_in=timedelta(days=1), **extra):
+        start = timezone.now() + starts_in
+        return Event.objects.create(
+            organizer=self.organizer, name="Feria", location="Plaza Mayor",
+            start_at=start, end_at=start + timedelta(hours=4), capacity=capacity, **extra,
+        )
+
+    def buy(self, event=None):
+        return self.client.post(self.url, {"event": str((event or self.event).pk)}, format="json")
+
+
+class TicketPurchaseTests(TicketPurchaseBase):
+
+    def test_cliente_can_acquire_ticket(self):
+        response = self.buy()
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["status"], "VALIDO")
+        self.assertEqual(response.data["event"]["name"], "Feria")
+        ticket = Ticket.objects.get(pk=response.data["id"])
+        self.assertEqual(ticket.holder, self.cliente)
+        self.assertEqual(str(ticket.code), response.data["code"])
+
+    def test_cannot_acquire_two_tickets_for_same_event(self):
+        self.buy()
+        response = self.buy()
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(Ticket.objects.filter(holder=self.cliente).count(), 1)
+
+    def test_can_acquire_again_if_previous_ticket_was_annulled(self):
+        Ticket.objects.create(event=self.event, holder=self.cliente, status=Ticket.Status.ANULADO)
+
+        self.assertEqual(self.buy().status_code, status.HTTP_201_CREATED)
+
+    def test_cannot_exceed_event_capacity(self):
+        for email in ("b@example.com", "c@example.com"):
+            Ticket.objects.create(event=self.event, holder=self.make_user(email, User.Role.ASISTENTE))
+
+        response = self.buy()
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertIn("agotadas", response.data["detail"])
+        self.assertEqual(self.event.tickets.count(), 2)
+
+    def test_cannot_acquire_ticket_for_finished_event(self):
+        event = self.make_event(starts_in=timedelta(days=-2))
+
+        self.assertEqual(self.buy(event).status_code, status.HTTP_409_CONFLICT)
+
+    def test_cannot_acquire_ticket_for_cancelled_event(self):
+        event = self.make_event(status=Event.Status.CANCELADO)
+
+        self.assertEqual(self.buy(event).status_code, status.HTTP_409_CONFLICT)
+
+    def test_unknown_event_returns_404(self):
+        response = self.client.post(self.url, {"event": str(uuid4())}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_only_asistentes_can_acquire(self):
+        self.client.force_authenticate(self.organizer)
+        self.assertEqual(self.buy().status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(None)
+        self.assertEqual(self.buy().status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_list_returns_only_my_tickets(self):
+        self.buy()
+        other = self.make_user("otra@example.com", User.Role.ASISTENTE)
+        Ticket.objects.create(event=self.event, holder=other)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+    def test_cannot_see_ticket_of_another_attendee(self):
+        other = self.make_user("otra@example.com", User.Role.ASISTENTE)
+        ticket = Ticket.objects.create(event=self.event, holder=other)
+
+        response = self.client.get(reverse("tickets:detail", args=[ticket.pk]))
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class AvailableEventsTests(TicketPurchaseBase):
+    available_url = reverse("events:available")
+
+    def test_lists_upcoming_events_with_availability(self):
+        self.buy()
+        self.make_event(starts_in=timedelta(days=-2))  # ya termino
+        self.make_event(status=Event.Status.CANCELADO)
+
+        response = self.client.get(self.available_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["tickets_available"], 1)
+        self.assertTrue(response.data[0]["has_ticket"])
+
+    def test_only_asistentes_can_list_available_events(self):
+        self.client.force_authenticate(self.organizer)
+
+        self.assertEqual(self.client.get(self.available_url).status_code, status.HTTP_403_FORBIDDEN)
