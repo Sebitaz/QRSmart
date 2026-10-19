@@ -2,14 +2,20 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
-from rest_framework import status
+from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounts.permissions import IsOrganizadorOrLogistica
+from apps.accounts.permissions import IsAsistente, IsOrganizadorOrLogistica
 
 from .models import Ticket
-from .serializers import TicketSerializer, TicketValidationSerializer
+from .serializers import (
+    AttendeeTicketSerializer,
+    TicketPurchaseSerializer,
+    TicketSerializer,
+    TicketValidationSerializer,
+)
+from .services import acquire_ticket
 
 
 class TicketValidateView(APIView):
@@ -43,3 +49,27 @@ class TicketValidateView(APIView):
             ticket.save(update_fields=("status", "used_at", "validated_by"))
 
         return Response(TicketSerializer(ticket).data, status=status.HTTP_200_OK)
+
+
+class TicketListCreateView(generics.ListAPIView):
+    # GET: entradas del asistente, POST: adquirir una entrada
+    permission_classes = (IsAsistente,)
+    serializer_class = AttendeeTicketSerializer
+
+    def get_queryset(self):
+        return Ticket.objects.filter(holder=self.request.user).select_related("event")
+
+    @extend_schema(request=TicketPurchaseSerializer, responses={201: AttendeeTicketSerializer})
+    def post(self, request):
+        serializer = TicketPurchaseSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ticket = acquire_ticket(request.user, serializer.validated_data["event"])
+        return Response(AttendeeTicketSerializer(ticket).data, status=status.HTTP_201_CREATED)
+
+
+class TicketDetailView(generics.RetrieveAPIView):
+    permission_classes = (IsAsistente,)
+    serializer_class = AttendeeTicketSerializer
+
+    def get_queryset(self):
+        return Ticket.objects.filter(holder=self.request.user).select_related("event")

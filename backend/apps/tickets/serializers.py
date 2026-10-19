@@ -21,3 +21,26 @@ class TicketSerializer(serializers.ModelSerializer):
 
 class TicketValidationSerializer(serializers.Serializer):
     code = serializers.UUIDField()
+
+
+class TicketPurchaseSerializer(serializers.Serializer):
+    event = serializers.UUIDField()
+
+
+class AttendeeTicketSerializer(serializers.ModelSerializer):
+    event = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Ticket
+        fields = ("id", "code", "status", "event", "used_at", "created_at")
+        read_only_fields = fields
+
+    def get_event(self, obj):
+        event = obj.event
+        return {
+            "id": event.id,
+            "name": event.name,
+            "location": event.location,
+            "start_at": event.start_at,
+            "end_at": event.end_at,
+        }
