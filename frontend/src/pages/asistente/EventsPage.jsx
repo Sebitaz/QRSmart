@@ -9,7 +9,7 @@ function EventCard({ event, onAcquire, acquiring }) {
 
   let action
   if (event.has_ticket) {
-    action = <Link to="/asistente" className="btn btn-outline">Ver mi entrada</Link>
+    action = <Link to="/asistente/mis-tickets" className="btn btn-outline">Ver mi ticket QR</Link>
   } else if (soldOut) {
     action = <button className="btn btn-outline" disabled>Agotado</button>
   } else {
@@ -62,8 +62,8 @@ export default function EventsPage() {
     setError('')
     setAcquiringId(event.id)
     try {
-      await ticketsApi.acquire(event.id)
-      navigate('/asistente', { state: { acquired: event.name } })
+      const ticket = await ticketsApi.acquire(event.id)
+      navigate(`/asistente/tickets/${ticket.id}`, { state: { acquired: event.name, ticket } })
     } catch (err) {
       setError(err.message)
       // puede que se hayan agotado mientras tanto

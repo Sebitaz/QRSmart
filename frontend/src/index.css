@@ -174,6 +174,23 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 0.5rem; }
 }
 .text-danger { color: var(--danger); }
 
+.ticket-filter-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .ticket-list { display: grid; gap: 1rem; }
 .ticket-card {
   display: flex;
@@ -182,10 +199,35 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 0.5rem; }
   gap: 1.5rem;
   flex-wrap: wrap;
 }
-.ticket-info p { margin: 0.15rem 0; font-size: 0.9rem; }
-.ticket-info .badge { margin-top: 0.75rem; }
+.ticket-card-link {
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ticket-card-link:hover,
+.ticket-card-link:focus-visible {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.ticket-info { flex: 1; min-width: 220px; }
+.ticket-info-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.ticket-info p { margin: 0.2rem 0; font-size: 0.9rem; }
+.ticket-open-cta {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+}
 .ticket-qr { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
-.ticket-qr svg { background: #fff; border-radius: 8px; }
+.ticket-qr svg { background: #fff; border-radius: 10px; padding: 4px; }
 .ticket-code { color: var(--muted); letter-spacing: 0.1em; font-size: 0.85rem; }
 .ticket-inactive { opacity: 0.6; }
 .ticket-inactive .ticket-qr svg { filter: grayscale(1); }
@@ -193,6 +235,182 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 0.5rem; }
 .badge-ticket-valido { background: rgba(111, 227, 154, 0.15); color: var(--success); }
 .badge-ticket-usado { background: var(--surface-2); color: var(--muted); }
 .badge-ticket-anulado { background: rgba(255, 107, 107, 0.15); color: var(--danger); }
+
+/* ===== Billetera Digital (Mobile-First Wallet Pass - HU 2.2) ===== */
+.wallet-container {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  padding-bottom: 2rem;
+}
+
+.wallet-pass {
+  background: linear-gradient(180deg, #1d2218 0%, var(--surface) 38%, var(--surface) 100%);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+
+.wallet-pass-inactive {
+  background: var(--surface);
+  opacity: 0.8;
+}
+
+.wallet-pass-header {
+  padding: 1.35rem 1.35rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.wallet-pass-brand {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.wallet-event-title {
+  font-size: 1.4rem;
+  margin: 0 0 0.25rem;
+}
+
+.wallet-status-caption {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.wallet-qr-section {
+  padding: 1.5rem 1.25rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.wallet-qr-frame {
+  background: #ffffff;
+  padding: 1rem;
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wallet-qr-frame svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.wallet-pass-inactive .wallet-qr-frame svg {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.wallet-qr-hint {
+  margin: 0.9rem 0 1rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  max-width: 30ch;
+}
+
+.wallet-uuid-box {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.wallet-uuid-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.wallet-uuid-value {
+  font-size: 0.8rem;
+  word-break: break-all;
+  color: var(--accent);
+}
+
+.wallet-copy-btn {
+  margin-top: 0.15rem;
+}
+
+.wallet-divider {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 28px;
+  overflow: hidden;
+}
+
+.wallet-perforation {
+  width: 100%;
+  border-top: 2px dashed var(--border);
+  margin: 0 18px;
+}
+
+.wallet-notch {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+}
+
+.wallet-notch-left {
+  left: -13px;
+}
+
+.wallet-notch-right {
+  right: -13px;
+}
+
+.wallet-pass-details {
+  padding: 1rem 1.35rem 1.4rem;
+}
+
+.wallet-detail-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.wallet-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.wallet-detail-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.wallet-detail-value {
+  font-size: 0.95rem;
+}
+
+.wallet-privacy-note {
+  margin: 1.15rem 0 0;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: center;
+}
 
 @media (max-width: 520px) {
   .ticket-card { flex-direction: column; align-items: stretch; }

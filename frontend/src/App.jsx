@@ -6,6 +6,7 @@ import { ROLES } from './constants/roles'
 import { useAuth } from './context/auth-context'
 import AttendeeHomePage from './pages/asistente/AttendeeHomePage'
 import EventsPage from './pages/asistente/EventsPage'
+import TicketDetailPage from './pages/asistente/TicketDetailPage'
 import LoginPage from './pages/LoginPage'
 import StaffHomePage from './pages/logistica/StaffHomePage'
 import CreateEventPage from './pages/organizador/CreateEventPage'
@@ -33,6 +34,8 @@ function App() {
           </Route>
           <Route element={<ProtectedRoute allowedRoles={[ROLES.ASISTENTE]} />}>
             <Route path="/asistente" element={<AttendeeHomePage />} />
+            <Route path="/asistente/mis-tickets" element={<AttendeeHomePage />} />
+            <Route path="/asistente/tickets/:ticketId" element={<TicketDetailPage />} />
             <Route path="/asistente/eventos" element={<EventsPage />} />
           </Route>
         </Route>

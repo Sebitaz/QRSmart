@@ -1,4 +1,4 @@
-export const ROLES = Object.freeze({
+33export const ROLES = Object.freeze({
   ORGANIZADOR: 'ORGANIZADOR',
   LOGISTICA: 'LOGISTICA',
   ASISTENTE: 'ASISTENTE',
@@ -13,7 +13,7 @@ export const ROLE_LABELS = {
 export const ROLE_HOME = {
   [ROLES.ORGANIZADOR]: '/organizador',
   [ROLES.LOGISTICA]: '/logistica',
-  [ROLES.ASISTENTE]: '/asistente',
+  [ROLES.ASISTENTE]: '/asistente/mis-tickets',
 }
 
 export const ROLE_NAV = {
@@ -23,7 +23,7 @@ export const ROLE_NAV = {
   ],
   [ROLES.LOGISTICA]: [{ to: '/logistica', label: 'Escáner' }],
   [ROLES.ASISTENTE]: [
-    { to: '/asistente', label: 'Mis entradas' },
+    { to: '/asistente/mis-tickets', label: 'Mis Tickets' },
     { to: '/asistente/eventos', label: 'Eventos' },
   ],
 }

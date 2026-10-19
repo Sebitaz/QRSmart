@@ -31,7 +31,8 @@ La app queda en http://localhost:5173 y consume la API definida en `VITE_API_URL
 | `/organizador`                 | Organizador   | Mis eventos + aforo             |
 | `/organizador/eventos/nuevo`   | Organizador   | Crear evento                    |
 | `/logistica`                   | Logística     | Control de acceso (escáner)     |
-| `/asistente`                   | Asistente     | Mis entradas con código QR      |
+| `/asistente`, `/asistente/mis-tickets` | Asistente | Mis Tickets (compras activas)   |
+| `/asistente/tickets/:ticketId` | Asistente     | Pase QR digital (Wallet Pass)   |
 | `/asistente/eventos`           | Asistente     | Eventos disponibles             |
 
 Al iniciar sesión cada usuario es redirigido al inicio de su rol; si intenta abrir

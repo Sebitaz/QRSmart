@@ -44,6 +44,7 @@ También se puede trabajar en cada carpeta por separado (ver sus README).
 | HU 4.3  | Control de Acceso en la API              | ✅ Implementada |
 | HU 1.1  | Creación de Eventos                      | ✅ Implementada |
 | HU 2.1  | Compra/Adquisición de ticket             | ✅ Implementada |
+| HU 2.2  | Visualización del Ticket QR              | ✅ Implementada |
 
 ## Flujo de ramas (Git Flow simplificado)
 
