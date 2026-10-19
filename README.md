@@ -29,14 +29,15 @@ npm install
 npm run dev
 ```
 
-## Historias de usuario implementadas (Sprint 1)
+## Historias de usuario implementadas
 
 | HU      | Descripción                              | Estado         |
 |---------|------------------------------------------|----------------|
 | HU 4.1  | Registro e Inicio de Sesión              | ✅ Implementada |
 | HU 4.2  | Redirección y Experiencia por Rol        | ✅ Implementada |
-| HU 4.3  | Control de Acceso en la API              | ⏳ Pendiente    |
+| HU 4.3  | Control de Acceso en la API              | ✅ Implementada |
 | HU 1.1  | Creación de Eventos                      | ✅ Implementada |
+| HU 2.1  | Compra/Adquisición de ticket             | ✅ Implementada |
 
 ## Flujo de ramas (Git Flow simplificado)
 
