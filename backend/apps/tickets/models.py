@@ -38,6 +38,14 @@ class Ticket(models.Model):
         verbose_name = "ticket"
         verbose_name_plural = "tickets"
         ordering = ("-created_at",)
+        constraints = [
+            # un asistente solo puede tener una entrada activa por evento
+            models.UniqueConstraint(
+                fields=("event", "holder"),
+                condition=~models.Q(status="ANULADO"),
+                name="unique_active_ticket_per_holder",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.code} - {self.event.name} ({self.status})"
