@@ -159,3 +159,42 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 0.5rem; }
 .occupancy-label { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.35rem; }
 .occupancy-bar { height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
 .occupancy-bar > div { height: 100%; background: var(--accent); border-radius: 999px; }
+
+/* ===== Entradas del asistente ===== */
+.event-description { margin-top: 0.5rem !important; }
+.event-card { display: flex; flex-direction: column; }
+.event-card-footer {
+  margin-top: auto;
+  padding-top: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+}
+.text-danger { color: var(--danger); }
+
+.ticket-list { display: grid; gap: 1rem; }
+.ticket-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.ticket-info p { margin: 0.15rem 0; font-size: 0.9rem; }
+.ticket-info .badge { margin-top: 0.75rem; }
+.ticket-qr { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+.ticket-qr svg { background: #fff; border-radius: 8px; }
+.ticket-code { color: var(--muted); letter-spacing: 0.1em; font-size: 0.85rem; }
+.ticket-inactive { opacity: 0.6; }
+.ticket-inactive .ticket-qr svg { filter: grayscale(1); }
+
+.badge-ticket-valido { background: rgba(111, 227, 154, 0.15); color: var(--success); }
+.badge-ticket-usado { background: var(--surface-2); color: var(--muted); }
+.badge-ticket-anulado { background: rgba(255, 107, 107, 0.15); color: var(--danger); }
+
+@media (max-width: 520px) {
+  .ticket-card { flex-direction: column; align-items: stretch; }
+  .ticket-qr { align-self: center; }
+}
