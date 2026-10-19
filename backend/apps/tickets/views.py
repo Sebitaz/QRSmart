@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.permissions import IsAsistente, IsOrganizadorOrLogistica
+from apps.events.models import Event
 
 from .models import Ticket
 from .serializers import (
@@ -19,10 +20,12 @@ from .services import acquire_ticket
 
 
 class TicketValidateView(APIView):
-    """Marca como USADO el ticket cuyo QR se escaneó.
+    """Marca como USADO el ticket cuyo QR se escaneó y actualiza el aforo actual.
 
     HU 4.3: solo ORGANIZADOR o LOGISTICA. Los permisos se evalúan antes de
     tocar la BD, así que un asistente recibe 403 sin revelar si el código existe.
+    HU 1.2: actualiza el aforo actual del evento inmediatamente tras un escaneo
+    exitoso y previene sobrepasar la capacidad máxima.
     """
 
     permission_classes = (IsOrganizadorOrLogistica,)
@@ -43,10 +46,22 @@ class TicketValidateView(APIView):
                     {"detail": f"El ticket no es válido (estado: {ticket.get_status_display()})."},
                     status=status.HTTP_409_CONFLICT,
                 )
+
+            event = Event.objects.select_for_update().get(pk=ticket.event_id)
+            if event.current_occupancy >= event.capacity:
+                return Response(
+                    {"detail": "No es posible ingresar: el evento ya alcanzó su capacidad máxima de aforo."},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
             ticket.status = Ticket.Status.USADO
             ticket.used_at = timezone.now()
             ticket.validated_by = request.user
             ticket.save(update_fields=("status", "used_at", "validated_by"))
+
+            # HU 1.2: actualiza inmediatamente el aforo con el número de personas ingresadas
+            event.current_occupancy = event.tickets.filter(status=Ticket.Status.USADO).count()
+            event.save(update_fields=("current_occupancy",))
 
         return Response(TicketSerializer(ticket).data, status=status.HTTP_200_OK)
 

@@ -23,11 +23,11 @@ class TicketValidationTests(APITestCase):
         self.logistica = self.make_user("log@example.com", User.Role.LOGISTICA)
         self.cliente = self.make_user("cliente@example.com", User.Role.ASISTENTE)
         start = timezone.now() + timedelta(days=1)
-        event = Event.objects.create(
+        self.event = Event.objects.create(
             organizer=self.organizer, name="Concierto", location="Estadio",
             start_at=start, end_at=start + timedelta(hours=3), capacity=100,
         )
-        self.ticket = Ticket.objects.create(event=event, holder=self.cliente)
+        self.ticket = Ticket.objects.create(event=self.event, holder=self.cliente)
 
     def make_user(self, email, role):
         return User.objects.create_user(
@@ -75,6 +75,8 @@ class TicketValidationTests(APITestCase):
         self.assertEqual(self.ticket.status, Ticket.Status.USADO)
         self.assertEqual(self.ticket.validated_by, self.organizer)
         self.assertIsNotNone(self.ticket.used_at)
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.current_occupancy, 1)
 
     def test_logistica_can_validate_ticket(self):
         self.client.force_authenticate(self.logistica)
@@ -82,8 +84,47 @@ class TicketValidationTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], Ticket.Status.USADO)
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.current_occupancy, 1)
 
-    # --- reglas de negocio de la validación ---
+    # --- reglas de negocio de la validación (HU 1.2) ---
+
+    def test_validation_increments_event_current_occupancy_immediately(self):
+        # Al validar exitosamente, el aforo actual aumenta de inmediato
+        self.client.force_authenticate(self.logistica)
+        self.assertEqual(self.event.current_occupancy, 0)
+
+        response = self.validate()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.current_occupancy, 1)
+
+        # Segundo ticket escaneado
+        cliente2 = self.make_user("cliente2@example.com", User.Role.ASISTENTE)
+        ticket2 = Ticket.objects.create(event=self.event, holder=cliente2)
+        response2 = self.validate(code=ticket2.code)
+        self.assertEqual(response2.status_code, status.HTTP_200_OK)
+
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.current_occupancy, 2)
+
+    def test_validation_rejected_when_event_occupancy_reaches_capacity(self):
+        # Si el evento ya llegó a su capacidad máxima, no se permite el ingreso
+        start = timezone.now() + timedelta(days=1)
+        full_event = Event.objects.create(
+            organizer=self.organizer, name="Exclusivo", location="Sala VIP",
+            start_at=start, end_at=start + timedelta(hours=2), capacity=1, current_occupancy=1,
+        )
+        ticket = Ticket.objects.create(event=full_event, holder=self.cliente)
+
+        self.client.force_authenticate(self.logistica)
+        response = self.client.post(self.url, {"code": str(ticket.code)}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertIn("capacidad máxima de aforo", response.data["detail"])
+        ticket.refresh_from_db()
+        self.assertEqual(ticket.status, Ticket.Status.VALIDO)
 
     def test_used_ticket_cannot_be_validated_twice(self):
         self.client.force_authenticate(self.logistica)
