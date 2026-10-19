@@ -15,5 +15,8 @@ desktop.ini
 .env.*
 !.env.example
 
+# ===== Node (raíz) =====
+node_modules/
+
 # ===== Logs =====
 *.log

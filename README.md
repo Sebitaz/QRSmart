@@ -23,11 +23,12 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 
-# Terminal 2 - Frontend
-cd frontend
-npm install
+# Terminal 2 - Frontend (desde la raíz del repositorio)
+npm run setup   # solo la primera vez o cuando cambien dependencias
 npm run dev
 ```
+
+También se puede entrar a `frontend/` y usar `npm install` / `npm run dev` directamente.
 
 ## Historias de usuario implementadas
 
