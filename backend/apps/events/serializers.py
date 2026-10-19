@@ -63,5 +63,5 @@ class AvailableEventSerializer(serializers.ModelSerializer):
         )
         read_only_fields = fields
 
-    def get_tickets_available(self, obj):
+    def get_tickets_available(self, obj) -> int:
         return max(obj.capacity - obj.tickets_sold, 0)
