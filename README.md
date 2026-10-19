@@ -14,21 +14,26 @@ Cada carpeta tiene su propio README con instrucciones para ejecutarla:
 
 ## Inicio rápido
 
-```bash
-# Terminal 1 - API
-cd backend
-python -m venv .venv
-.venv\Scripts\Activate.ps1        # Windows PowerShell (macOS/Linux: source .venv/bin/activate)
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
+Requisitos: Python 3.12+ y Node.js 20+. Desde la raíz del repositorio:
 
-# Terminal 2 - Frontend (desde la raíz del repositorio)
+```bash
 npm run setup   # solo la primera vez o cuando cambien dependencias
-npm run dev
+npm run dev     # levanta backend (puerto 8000) y frontend (puerto 5173); Ctrl+C detiene ambos
 ```
 
-También se puede entrar a `frontend/` y usar `npm install` / `npm run dev` directamente.
+| Comando                | Descripción                                                        |
+|------------------------|--------------------------------------------------------------------|
+| `npm run setup`        | Crea el `.venv`, instala dependencias de backend y frontend y migra |
+| `npm run dev`          | Inicia backend y frontend al mismo tiempo                          |
+| `npm run dev:backend`  | Inicia solo el backend                                             |
+| `npm run dev:frontend` | Inicia solo el frontend                                            |
+| `npm run build`        | Build de producción del frontend                                   |
+| `npm run lint`         | Linter del frontend                                                |
+
+- App: http://localhost:5173
+- API (Swagger): http://localhost:8000/api/docs/
+
+También se puede trabajar en cada carpeta por separado (ver sus README).
 
 ## Historias de usuario implementadas
 

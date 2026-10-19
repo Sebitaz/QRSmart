@@ -1,10 +1,12 @@
 {
   "name": "qrsmart",
   "private": true,
-  "description": "Atajos para correr el frontend desde la raíz del repositorio",
+  "description": "Atajos para correr el proyecto desde la raíz del repositorio",
   "scripts": {
-    "setup": "npm --prefix frontend install",
-    "dev": "npm --prefix frontend run dev",
+    "setup": "node scripts/setup.mjs",
+    "dev": "node scripts/dev.mjs",
+    "dev:backend": "node scripts/dev.mjs backend",
+    "dev:frontend": "node scripts/dev.mjs frontend",
     "build": "npm --prefix frontend run build",
     "lint": "npm --prefix frontend run lint",
     "preview": "npm --prefix frontend run preview"
