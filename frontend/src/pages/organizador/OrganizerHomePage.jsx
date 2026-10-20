@@ -142,15 +142,24 @@ export default function OrganizerHomePage() {
 
   const handleValidateTicket = async (e) => {
     e.preventDefault()
-    if (!qrInput.trim()) return
+    const trimmed = qrInput.trim()
+    if (!trimmed) return
+
+    if (trimmed.length < 32) {
+      setScanMessage({
+        type: 'error',
+        text: `El código ingresado ("${trimmed}") es solo una abreviación visual (8 caracteres). Debes ingresar el código QR completo de 36 caracteres (UUID). Puedes copiarlo con un clic desde "Mis entradas" del asistente.`,
+      })
+      return
+    }
 
     setScanLoading(true)
     setScanMessage(null)
     try {
-      const res = await ticketsApi.validate(qrInput.trim())
+      const res = await ticketsApi.validate(trimmed)
       setScanMessage({
         type: 'success',
-        text: `¡Escaneo exitoso! Ticket validado. Asistente ingresado (${res.event_name || 'Evento'}). El aforo se actualizó en vivo.`,
+        text: `¡Escaneo exitoso! Ticket validado. Asistente ingresado (${res.event?.name || 'Evento'}). El aforo se actualizó en vivo.`,
       })
       setQrInput('')
       await reloadEvents() // Actualiza inmediatamente el aforo
@@ -239,7 +248,7 @@ export default function OrganizerHomePage() {
           <form onSubmit={handleValidateTicket} className="sim-form">
             <input
               type="text"
-              placeholder="Pega el código QR (UUID) del ticket a ingresar…"
+              placeholder="Pega el UUID completo del QR (ej. 7d7d654d-a505-45c3-af00-1aa4e45e7dce)…"
               value={qrInput}
               onChange={(e) => setQrInput(e.target.value)}
               disabled={scanLoading}
@@ -248,6 +257,9 @@ export default function OrganizerHomePage() {
               {scanLoading ? 'Validando…' : 'Validar Entrada'}
             </button>
           </form>
+          <p className="muted" style={{ margin: '0.4rem 0 0', fontSize: '0.8rem' }}>
+            💡 <em>Tip:</em> Los códigos QR contienen un identificador UUID completo de 36 caracteres. En la pestaña de asistente haz clic sobre el código para copiarlo al portapapeles.
+          </p>
 
           {scanMessage && (
             <div

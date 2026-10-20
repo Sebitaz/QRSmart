@@ -14,6 +14,16 @@ const STATUS_LABELS = {
 function TicketCard({ ticket }) {
   const { event } = ticket
   const isValid = ticket.status === 'VALIDO'
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(ticket.code)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
   return (
     <article className={`card ticket-card ${isValid ? '' : 'ticket-inactive'}`}>
       <div className="ticket-info">
@@ -26,7 +36,15 @@ function TicketCard({ ticket }) {
       </div>
       <div className="ticket-qr">
         <QRCodeSVG value={ticket.code} size={160} marginSize={2} title={`Entrada ${event.name}`} />
-        <code className="ticket-code">{ticket.code.slice(0, 8).toUpperCase()}</code>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="btn-copy-code"
+          title={`Código completo: ${ticket.code} (clic para copiar)`}
+        >
+          <code className="ticket-code">{copied ? '✓ ¡Copiado!' : ticket.code.slice(0, 8).toUpperCase()}</code>
+          <span className="copy-hint">{copied ? 'UUID copiado al portapapeles' : 'Clic para copiar UUID completo'}</span>
+        </button>
       </div>
     </article>
   )

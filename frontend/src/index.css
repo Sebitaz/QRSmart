@@ -314,6 +314,32 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 0.5rem; }
 .ticket-qr { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
 .ticket-qr svg { background: #fff; border-radius: 8px; }
 .ticket-code { color: var(--muted); letter-spacing: 0.1em; font-size: 0.85rem; }
+.btn-copy-code {
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+  color: inherit;
+}
+.btn-copy-code:hover {
+  background: var(--surface-2);
+  border-color: var(--accent);
+}
+.btn-copy-code .ticket-code {
+  display: block;
+  font-weight: 700;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.copy-hint {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+}
 .ticket-inactive { opacity: 0.6; }
 .ticket-inactive .ticket-qr svg { filter: grayscale(1); }
 
