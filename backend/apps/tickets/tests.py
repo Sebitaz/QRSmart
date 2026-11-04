@@ -222,3 +222,60 @@ class AvailableEventsTests(TicketPurchaseBase):
         self.client.force_authenticate(self.organizer)
 
         self.assertEqual(self.client.get(self.available_url).status_code, status.HTTP_403_FORBIDDEN)
+
+
+class PublicTicketTests(TicketPurchaseBase):
+    """Página que abre el celular al escanear el QR."""
+
+    def setUp(self):
+        super().setUp()
+        self.cliente.first_name = "Juan Sebastián"
+        self.cliente.last_name = "vásquez Gómez"
+        self.cliente.save()
+        self.event = self.make_event()
+        self.ticket = Ticket.objects.create(event=self.event, holder=self.cliente)
+        self.client.force_authenticate(None)  # quien escanea no tiene sesión
+
+    def url(self, code=None):
+        return reverse("tickets:public", args=[code or self.ticket.code])
+
+    def test_anyone_can_see_ticket_without_login(self):
+        response = self.client.get(self.url())
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], Ticket.Status.VALIDO)
+        self.assertEqual(response.data["event"]["name"], self.event.name)
+        self.assertEqual(response.data["event"]["location"], self.event.location)
+
+    def test_holder_name_is_abbreviated(self):
+        self.assertEqual(self.client.get(self.url()).data["holder_name"], "Juan V.")
+
+    def test_does_not_expose_private_data(self):
+        data = self.client.get(self.url()).data
+
+        self.assertNotIn("id", data)
+        self.assertNotIn("holder", data)
+        self.assertNotIn("id", data["event"])
+        self.assertNotIn(self.cliente.email, str(data))
+        self.assertNotIn("Gómez", str(data))
+
+    def test_shows_used_ticket_status(self):
+        self.ticket.status = Ticket.Status.USADO
+        self.ticket.used_at = timezone.now()
+        self.ticket.save()
+
+        data = self.client.get(self.url()).data
+        self.assertEqual(data["status"], Ticket.Status.USADO)
+        self.assertIsNotNone(data["used_at"])
+
+    def test_invalid_token_is_ignored(self):
+        self.client.credentials(HTTP_AUTHORIZATION="Bearer token-vencido")
+        self.assertEqual(self.client.get(self.url()).status_code, status.HTTP_200_OK)
+
+    def test_unknown_code_returns_404(self):
+        self.assertEqual(self.client.get(self.url(uuid4())).status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_is_read_only(self):
+        self.client.force_authenticate(self.cliente)
+        self.assertEqual(self.client.post(self.url(), {}).status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertEqual(self.client.delete(self.url()).status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
