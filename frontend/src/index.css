@@ -529,3 +529,271 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 0.5rem; }
   .ticket-card { flex-direction: column; align-items: stretch; }
   .ticket-qr { align-self: center; }
 }
+
+/* ===== Escáner QR Logística (Mobile-First & Fullscreen Overlays) ===== */
+.scanner-page {
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+.scanner-wrapper {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.scanner-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1.15rem;
+}
+
+.scanner-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.scanner-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+
+.scanner-dot-live {
+  background: var(--success);
+  box-shadow: 0 0 10px var(--success);
+}
+
+.scanner-viewport-container {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  aspect-ratio: 1 / 1;
+  background: #050505;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.scanner-viewport {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.scanner-viewport video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+  border-radius: 16px;
+}
+
+/* Oculta el recuadro blanco y sombreado interno de html5-qrcode para no duplicar ni cortar la cámara */
+#qr-shaded-region {
+  display: none !important;
+}
+
+.scanner-reticle {
+  position: absolute;
+  inset: 16%;
+  pointer-events: none;
+}
+
+.reticle-corner {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-color: var(--accent);
+  border-style: solid;
+  border-width: 0;
+}
+
+.reticle-tl { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 10px; }
+.reticle-tr { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 10px; }
+.reticle-bl { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 10px; }
+.reticle-br { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 10px; }
+
+.scanner-camera-alert {
+  margin: 0;
+}
+
+.scanner-manual-form {
+  display: grid;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+.scanner-manual-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.scanner-manual-row input {
+  flex: 1;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+}
+
+.scanner-history-card h3 {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.scanner-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.scanner-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  background: var(--surface-2);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.scanner-history-detail {
+  flex: 1;
+  min-width: 140px;
+}
+
+.badge-scan-allowed { background: rgba(111, 227, 154, 0.18); color: var(--success); }
+.badge-scan-used { background: rgba(255, 107, 107, 0.18); color: var(--danger); }
+.badge-scan-invalid { background: rgba(250, 204, 21, 0.18); color: #facc15; }
+
+/* ===== Paneles a Pantalla Completa (200 / 409 / 404-400) ===== */
+.scan-fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  text-align: center;
+  animation: scanOverlayFadeIn 0.18s ease-out;
+}
+
+@keyframes scanOverlayFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.scan-overlay-allowed {
+  background: linear-gradient(160deg, #00e676 0%, #00b248 100%);
+  color: #06210e;
+}
+
+.scan-overlay-used {
+  background: linear-gradient(160deg, #e53935 0%, #b71c1c 100%);
+  color: #ffffff;
+}
+
+.scan-overlay-invalid {
+  background: linear-gradient(160deg, #eab308 0%, #ca8a04 100%);
+  color: #1c1917;
+}
+
+.scan-overlay-content {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.scan-overlay-icon {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.16);
+  display: grid;
+  place-items: center;
+  font-size: 3.25rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.scan-overlay-title {
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.scan-overlay-subtitle {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+  opacity: 0.92;
+}
+
+.scan-overlay-meta {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 14px;
+  padding: 0.95rem 1rem;
+  margin-top: 0.4rem;
+}
+
+.scan-overlay-detail {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.scan-overlay-uuid {
+  font-size: 0.8rem;
+  opacity: 0.88;
+  word-break: break-all;
+}
+
+.scan-cooldown-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.scan-cooldown-progress {
+  height: 100%;
+  background: currentColor;
+  animation: cooldownShrink 2.8s linear forwards;
+}
+
+@keyframes cooldownShrink {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.scan-overlay-btn {
+  margin-top: 0.5rem;
+  background: rgba(0, 0, 0, 0.24);
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  width: 100%;
+}
+

@@ -6,5 +6,7 @@ export const ticketsApi = {
   acquire: (eventId) => apiFetch('/tickets/', { method: 'POST', body: { event: eventId } }),
   transfer: (id, email) =>
     apiFetch(`/tickets/${id}/transfer/`, { method: 'POST', body: { email } }),
+  validate: (code) =>
+    apiFetch('/tickets/validate/', { method: 'POST', body: { code } }),
 }
 
