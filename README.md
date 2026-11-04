@@ -30,7 +30,7 @@ npm run dev     # levanta backend (puerto 8000) y frontend (puerto 5173); Ctrl+C
 | `npm run build`        | Build de producción del frontend                                   |
 | `npm run lint`         | Linter del frontend                                                |
 
-- App: http://localhost:5173
+- App: http://localhost:5173 (desde el celular, en la misma WiFi: la dirección `Network` que muestra Vite)
 - API (Swagger): http://localhost:8000/api/docs/
 
 También se puede trabajar en cada carpeta por separado (ver sus README).

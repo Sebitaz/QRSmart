@@ -53,6 +53,7 @@ python manage.py test apps
 | POST   | `/api/tickets/`            | `ASISTENTE`                | Adquirir una entrada (`{"event": "<uuid>"}`) |
 | GET    | `/api/tickets/{id}/`       | `ASISTENTE`                | Detalle de una entrada propia                |
 | POST   | `/api/tickets/validate/`   | `ORGANIZADOR`, `LOGISTICA` | Marca como usado el ticket del QR (`{"code": "<uuid>"}`) |
+| GET    | `/api/tickets/public/{code}/` | Público (solo lectura)  | Vista de la entrada que abre el QR           |
 
 Las peticiones autenticadas usan el encabezado `Authorization: Bearer <access>`.
 
@@ -70,6 +71,14 @@ Las peticiones autenticadas usan el encabezado `Authorization: Bearer <access>`.
 - No se pueden adquirir más entradas que la capacidad del evento.
 - Solo se pueden adquirir entradas de eventos programados o en curso que no hayan terminado.
 - Si alguna regla no se cumple la API responde `409 Conflict` con el motivo en `detail`.
+
+### Vista pública de la entrada (QR)
+
+- `GET /api/tickets/public/{code}/` no requiere sesión: es lo que consulta el celular al
+  escanear el QR. Ignora el encabezado `Authorization`, así un token vencido no da `401`.
+- Solo expone evento (nombre, lugar, fechas, estado), estado de la entrada y el titular
+  abreviado (`Juan V.`). No incluye email, ids internos ni apellidos completos.
+- Es de solo lectura; validar la entrada sigue requiriendo `ORGANIZADOR` o `LOGISTICA`.
 
 ## Estructura
 
