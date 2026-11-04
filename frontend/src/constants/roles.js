@@ -1,4 +1,4 @@
-33export const ROLES = Object.freeze({
+export const ROLES = Object.freeze({
   ORGANIZADOR: 'ORGANIZADOR',
   LOGISTICA: 'LOGISTICA',
   ASISTENTE: 'ASISTENTE',
