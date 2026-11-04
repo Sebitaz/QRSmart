@@ -87,7 +87,21 @@ class TicketValidationTests(APITestCase):
         self.event.refresh_from_db()
         self.assertEqual(self.event.current_occupancy, 1)
 
-    # --- reglas de negocio de la validación (HU 1.2) ---
+    # --- reglas de negocio de la validación (HU 1.2 y HU 3.2) ---
+
+    def test_valid_ticket_shows_acceso_permitido_and_changes_status_to_usado(self):
+        # HU 3.2: Criterio 1: Mensaje verde "Acceso Permitido" y estado a "Usado"
+        self.client.force_authenticate(self.logistica)
+        self.assertEqual(self.ticket.status, Ticket.Status.VALIDO)
+
+        response = self.validate()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["message"], "Acceso Permitido")
+        self.assertEqual(response.data["status"], Ticket.Status.USADO)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.status, Ticket.Status.USADO)
+        self.assertIsNotNone(self.ticket.used_at)
 
     def test_validation_increments_event_current_occupancy_immediately(self):
         # Al validar exitosamente, el aforo actual aumenta de inmediato
@@ -127,14 +141,36 @@ class TicketValidationTests(APITestCase):
         self.assertEqual(ticket.status, Ticket.Status.VALIDO)
 
     def test_used_ticket_cannot_be_validated_twice(self):
+        # HU 3.2: Criterio 2: Escaneado por 2da vez arroja error "Ticket ya usado"
         self.client.force_authenticate(self.logistica)
-        self.validate()
+        first_resp = self.validate()
+        self.assertEqual(first_resp.status_code, status.HTTP_200_OK)
 
-        self.assertEqual(self.validate().status_code, status.HTTP_409_CONFLICT)
+        second_resp = self.validate()
+        self.assertEqual(second_resp.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(second_resp.data["detail"], "Ticket ya usado.")
+        self.assertEqual(second_resp.data["code"], "ticket_already_used")
+        self.assertIsNotNone(second_resp.data.get("used_at"))
 
-    def test_unknown_code_returns_404(self):
+    def test_unknown_code_returns_404_ticket_invalido(self):
+        # HU 3.2: Criterio 3: UUID no existente en BD arroja error "Ticket Inválido"
         self.client.force_authenticate(self.logistica)
-        self.assertEqual(self.validate(uuid4()).status_code, status.HTTP_404_NOT_FOUND)
+        response = self.validate(uuid4())
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "Ticket Inválido.")
+        self.assertEqual(response.data["code"], "ticket_not_found")
+
+    def test_validation_performance_latency_under_200ms(self):
+        # HU 3.2: Criterio 4: La API responde en menos de 200ms
+        import time
+        self.client.force_authenticate(self.logistica)
+        start_time = time.perf_counter()
+        response = self.validate()
+        duration_ms = (time.perf_counter() - start_time) * 1000
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Aseguramos que la latencia sea muy inferior a 200ms
+        self.assertLess(duration_ms, 200, f"Validación tomó {duration_ms:.2f}ms, superando el umbral de 200ms")
 
     def test_invalid_code_format_returns_400(self):
         self.client.force_authenticate(self.logistica)

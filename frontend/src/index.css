@@ -682,3 +682,215 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 0.5rem; }
   .ticket-card { flex-direction: column; align-items: stretch; }
   .ticket-qr { align-self: center; }
 }
+
+/* ===== HU 3.2: Validación de Acceso en Puerta y Control de Duplicidad ===== */
+.access-control-container {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 840px;
+  margin: 0 auto;
+}
+
+.access-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.access-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.access-stat-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.access-stat-number {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.access-stat-number.is-success { color: var(--success); }
+.access-stat-number.is-duplicate { color: var(--danger); }
+.access-stat-number.is-invalid { color: #ffb347; }
+.access-stat-number.is-latency { color: var(--accent); font-size: 1.4rem; }
+
+.access-scanner-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.access-input-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.access-input-group input {
+  font-family: monospace;
+  font-size: 1rem;
+  letter-spacing: 0.03em;
+}
+
+/* Alerta Visual Grande HU 3.2 */
+.access-result-card {
+  border-radius: var(--radius);
+  padding: 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  border: 2px solid;
+  animation: access-pop-in 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes access-pop-in {
+  from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.access-result-card.is-permitted {
+  background: rgba(111, 227, 154, 0.09);
+  border-color: var(--success);
+  box-shadow: 0 0 24px rgba(111, 227, 154, 0.22);
+}
+
+.access-result-card.is-used {
+  background: rgba(255, 77, 77, 0.12);
+  border-color: #ff4d4d;
+  box-shadow: 0 0 28px rgba(255, 77, 77, 0.3);
+  animation: access-shake 0.4s ease-in-out, access-pop-in 0.25s ease;
+}
+
+.access-result-card.is-invalid {
+  background: rgba(255, 179, 71, 0.12);
+  border-color: #ffb347;
+  box-shadow: 0 0 20px rgba(255, 179, 71, 0.22);
+}
+
+@keyframes access-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.access-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.access-result-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.7rem;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.access-result-card.is-permitted .access-result-title { color: var(--success); }
+.access-result-card.is-used .access-result-title { color: #ff6b6b; }
+.access-result-card.is-invalid .access-result-title { color: #ffb347; }
+
+.access-latency-pill {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: monospace;
+}
+
+.access-latency-pill.is-fast {
+  border-color: rgba(111, 227, 154, 0.4);
+  color: var(--success);
+}
+
+.access-result-message {
+  font-size: 1.05rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.access-details-box {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.access-detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.access-detail-field-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+.access-detail-field-value {
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.access-history-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+}
+
+.access-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.access-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.access-history-table th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.access-history-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.access-history-table tr:last-child td {
+  border-bottom: none;
+}
+

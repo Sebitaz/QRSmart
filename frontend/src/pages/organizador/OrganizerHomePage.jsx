@@ -159,14 +159,14 @@ export default function OrganizerHomePage() {
       const res = await ticketsApi.validate(trimmed)
       setScanMessage({
         type: 'success',
-        text: `¡Escaneo exitoso! Ticket validado. Asistente ingresado (${res.event?.name || 'Evento'}). El aforo se actualizó en vivo.`,
+        text: `✅ ${res.message || 'Acceso Permitido'}: Entrada validada. Asistente: ${res.holder?.full_name || 'Asistente'} (${res.event?.name || 'Evento'}). El aforo se actualizó en vivo.`,
       })
       setQrInput('')
       await reloadEvents() // Actualiza inmediatamente el aforo
     } catch (err) {
       setScanMessage({
         type: 'error',
-        text: err.message || 'Error al validar ticket.',
+        text: `❌ ${err.message || 'Error al validar ticket.'}`,
       })
     } finally {
       setScanLoading(false)
