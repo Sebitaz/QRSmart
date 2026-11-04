@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -11,6 +12,7 @@ from apps.accounts.permissions import IsAsistente, IsOrganizadorOrLogistica
 from .models import Ticket
 from .serializers import (
     AttendeeTicketSerializer,
+    PublicTicketSerializer,
     TicketPurchaseSerializer,
     TicketSerializer,
     TicketValidationSerializer,
@@ -73,3 +75,17 @@ class TicketDetailView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         return Ticket.objects.filter(holder=self.request.user).select_related("event")
+
+
+class PublicTicketView(generics.RetrieveAPIView):
+    """Vista pública de solo lectura que abre el celular al escanear el QR.
+
+    El código es un UUID aleatorio, así que solo lo conoce quien tiene el QR.
+    No permite validar: eso sigue siendo exclusivo de organizador/logística.
+    """
+
+    permission_classes = (AllowAny,)
+    authentication_classes = ()  # un token vencido en el navegador no debe dar 401
+    serializer_class = PublicTicketSerializer
+    queryset = Ticket.objects.select_related("event", "holder")
+    lookup_field = "code"
