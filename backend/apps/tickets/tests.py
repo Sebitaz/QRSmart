@@ -222,3 +222,95 @@ class AvailableEventsTests(TicketPurchaseBase):
         self.client.force_authenticate(self.organizer)
 
         self.assertEqual(self.client.get(self.available_url).status_code, status.HTTP_403_FORBIDDEN)
+
+
+class TicketTransferTests(TicketPurchaseBase):
+    """Pruebas de la HU 2.3: Transferencia atómica de ticket entre asistentes."""
+
+    def setUp(self):
+        super().setUp()
+        self.recipient = self.make_user("destinatario@example.com", User.Role.ASISTENTE)
+        self.ticket = Ticket.objects.create(event=self.event, holder=self.cliente)
+
+    def transfer(self, ticket=None, email=None):
+        target = ticket or self.ticket
+        return self.client.post(
+            reverse("tickets:transfer", args=[target.pk]),
+            {"email": email if email is not None else self.recipient.email},
+            format="json",
+        )
+
+    def test_owner_can_transfer_valid_ticket_atomically(self):
+        original_code = self.ticket.code
+
+        response = self.transfer(email="  DESTINATARIO@example.com ")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["recipient_email"], self.recipient.email)
+
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.holder, self.recipient)
+        self.assertNotEqual(self.ticket.code, original_code)
+        self.assertEqual(self.ticket.status, Ticket.Status.VALIDO)
+
+        # Desaparece del listado del dueño original
+        owner_list = self.client.get(self.url)
+        self.assertEqual(len(owner_list.data), 0)
+
+        # Aparece en el listado del destinatario con el nuevo código QR
+        self.client.force_authenticate(self.recipient)
+        recipient_list = self.client.get(self.url)
+        self.assertEqual(len(recipient_list.data), 1)
+        self.assertEqual(recipient_list.data[0]["id"], str(self.ticket.id))
+        self.assertEqual(recipient_list.data[0]["code"], str(self.ticket.code))
+
+    def test_non_owner_gets_403_when_attempting_transfer(self):
+        intruder = self.make_user("intruso@example.com", User.Role.ASISTENTE)
+        self.client.force_authenticate(intruder)
+
+        response = self.transfer()
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.holder, self.cliente)
+
+    def test_nonexistent_recipient_email_returns_404(self):
+        response = self.transfer(email="noexiste@example.com")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.holder, self.cliente)
+
+    def test_cannot_transfer_to_self(self):
+        response = self.transfer(email=self.cliente.email)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.holder, self.cliente)
+
+    def test_cannot_transfer_to_non_attendee_role(self):
+        response = self.transfer(email=self.organizer.email)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.holder, self.cliente)
+
+    def test_cannot_transfer_used_or_annulled_ticket(self):
+        self.ticket.status = Ticket.Status.USADO
+        self.ticket.save(update_fields=("status",))
+
+        response = self.transfer()
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.holder, self.cliente)
+
+    def test_cannot_transfer_if_recipient_already_has_active_ticket_for_event(self):
+        Ticket.objects.create(event=self.event, holder=self.recipient)
+
+        response = self.transfer()
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.holder, self.cliente)
+

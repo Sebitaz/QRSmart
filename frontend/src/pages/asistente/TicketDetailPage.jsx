@@ -1,7 +1,8 @@
 import { QRCodeSVG } from 'qrcode.react'
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ticketsApi } from '../../api/tickets'
+import TransferTicketModal from '../../components/TransferTicketModal'
 import { formatDate, formatRange } from '../../utils/dates'
 
 const STATUS_META = {
@@ -25,6 +26,7 @@ const STATUS_META = {
 export default function TicketDetailPage() {
   const { ticketId } = useParams()
   const location = useLocation()
+  const navigate = useNavigate()
   const acquired = location.state?.acquired
 
   const initialTicket = location.state?.ticket?.id === ticketId ? location.state.ticket : null
@@ -32,6 +34,7 @@ export default function TicketDetailPage() {
   const [loading, setLoading] = useState(!initialTicket)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [showTransferModal, setShowTransferModal] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -140,13 +143,24 @@ export default function TicketDetailPage() {
           <div className="wallet-uuid-box">
             <span className="wallet-uuid-label">UUID DEL TICKET</span>
             <code className="wallet-uuid-value">{qrUuidValue}</code>
-            <button
-              type="button"
-              className="btn btn-outline btn-sm wallet-copy-btn"
-              onClick={handleCopyUuid}
-            >
-              {copied ? '¡UUID copiado!' : 'Copiar código'}
-            </button>
+            <div className="wallet-action-row">
+              <button
+                type="button"
+                className="btn btn-outline btn-sm wallet-copy-btn"
+                onClick={handleCopyUuid}
+              >
+                {copied ? '¡UUID copiado!' : 'Copiar código'}
+              </button>
+              {isValid && (
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm wallet-copy-btn"
+                  onClick={() => setShowTransferModal(true)}
+                >
+                  Transferir entrada
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -185,6 +199,19 @@ export default function TicketDetailPage() {
           </p>
         </footer>
       </article>
+
+      <TransferTicketModal
+        ticket={showTransferModal ? ticket : null}
+        onClose={() => setShowTransferModal(false)}
+        onTransferred={(transferredTicket, response) => {
+          navigate('/asistente/mis-tickets', {
+            replace: true,
+            state: {
+              transferredNotice: `¡Listo! Transferiste tu entrada de “${transferredTicket.event.name}” a ${response.recipient_email}.`,
+            },
+          })
+        }}
+      />
     </section>
   )
 }

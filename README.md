@@ -45,6 +45,7 @@ También se puede trabajar en cada carpeta por separado (ver sus README).
 | HU 1.1  | Creación de Eventos                      | ✅ Implementada |
 | HU 2.1  | Compra/Adquisición de ticket             | ✅ Implementada |
 | HU 2.2  | Visualización del Ticket QR              | ✅ Implementada |
+| HU 2.3  | Transferencia de Ticket                  | ✅ Implementada |
 
 ## Flujo de ramas (Git Flow simplificado)
 

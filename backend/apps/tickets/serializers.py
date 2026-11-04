@@ -27,6 +27,23 @@ class TicketPurchaseSerializer(serializers.Serializer):
     event = serializers.UUIDField()
 
 
+class TicketTransferSerializer(serializers.Serializer):
+    email = serializers.EmailField(
+        error_messages={
+            "required": "Debes ingresar el correo electrónico del destinatario.",
+            "blank": "El correo electrónico del destinatario no puede estar vacío.",
+            "invalid": "Ingresa un correo electrónico válido.",
+        }
+    )
+
+
+class TicketTransferResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    ticket_id = serializers.UUIDField()
+    recipient_email = serializers.EmailField()
+
+
+
 class AttendeeTicketSerializer(serializers.ModelSerializer):
     event = serializers.SerializerMethodField()
 

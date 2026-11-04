@@ -2,6 +2,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { ticketsApi } from '../../api/tickets'
+import TransferTicketModal from '../../components/TransferTicketModal'
 import { useAuth } from '../../context/auth-context'
 import { formatRange } from '../../utils/dates'
 
@@ -11,19 +12,14 @@ const STATUS_LABELS = {
   ANULADO: 'Anulada',
 }
 
-function TicketCard({ ticket }) {
+function TicketCard({ ticket, onOpenTransfer }) {
   const { event } = ticket
   const isValid = ticket.status === 'VALIDO'
   // REGLA ESTRICTA HU 2.2: Solo el UUID del ticket generado por el backend
   const qrUuidValue = String(ticket.code)
 
   return (
-    <Link
-      to={`/asistente/tickets/${ticket.id}`}
-      state={{ ticket }}
-      className={`card ticket-card ticket-card-link ${isValid ? '' : 'ticket-inactive'}`}
-      aria-label={`Abrir ticket QR para ${event.name}`}
-    >
+    <article className={`card ticket-card ${isValid ? '' : 'ticket-inactive'}`}>
       <div className="ticket-info">
         <div className="ticket-info-top">
           <span className={`badge badge-ticket-${ticket.status.toLowerCase()}`}>
@@ -31,16 +27,54 @@ function TicketCard({ ticket }) {
           </span>
           <code className="ticket-code">#{qrUuidValue.slice(0, 8).toUpperCase()}</code>
         </div>
-        <h3>{event.name}</h3>
+        <h3>
+          <Link
+            to={`/asistente/tickets/${ticket.id}`}
+            state={{ ticket }}
+            className="ticket-title-link"
+          >
+            {event.name}
+          </Link>
+        </h3>
         <p className="muted">📍 {event.location}</p>
         <p className="muted">🗓️ {formatRange(event.start_at, event.end_at)}</p>
-        <span className="ticket-open-cta">Toque para abrir el código QR en pantalla completa →</span>
+
+        <div className="ticket-card-actions">
+          <Link
+            to={`/asistente/tickets/${ticket.id}`}
+            state={{ ticket }}
+            className="btn btn-primary btn-sm"
+          >
+            Ver pase QR
+          </Link>
+          {isValid && (
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              onClick={() => onOpenTransfer(ticket)}
+            >
+              Transferir
+            </button>
+          )}
+        </div>
       </div>
-      <div className="ticket-qr">
-        <QRCodeSVG value={qrUuidValue} size={136} level="M" marginSize={2} title={`Entrada ${event.name}`} />
+
+      <Link
+        to={`/asistente/tickets/${ticket.id}`}
+        state={{ ticket }}
+        className="ticket-qr ticket-qr-link"
+        aria-label={`Abrir código QR para ${event.name}`}
+      >
+        <QRCodeSVG
+          value={qrUuidValue}
+          size={136}
+          level="M"
+          marginSize={2}
+          title={`Entrada ${event.name}`}
+        />
         <code className="ticket-code">{qrUuidValue.slice(0, 8).toUpperCase()}</code>
-      </div>
-    </Link>
+      </Link>
+    </article>
   )
 }
 
@@ -48,10 +82,14 @@ export default function AttendeeHomePage() {
   const { user } = useAuth()
   const location = useLocation()
   const acquired = location.state?.acquired
+  const initialTransferNotice = location.state?.transferredNotice ?? ''
+
   const [tickets, setTickets] = useState([])
   const [filter, setFilter] = useState('ACTIVE')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [ticketToTransfer, setTicketToTransfer] = useState(null)
+  const [transferNotice, setTransferNotice] = useState(initialTransferNotice)
 
   useEffect(() => {
     ticketsApi
@@ -60,6 +98,15 @@ export default function AttendeeHomePage() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }, [])
+
+  const handleTransferred = (transferredTicket, response) => {
+    // HU 2.3: Actualiza el estado inmediatamente para que desaparezca sin recargar la página
+    setTickets((prev) => prev.filter((item) => item.id !== transferredTicket.id))
+    setTicketToTransfer(null)
+    setTransferNotice(
+      `¡Listo! Transferiste tu entrada de “${transferredTicket.event.name}” a ${response.recipient_email}.`
+    )
+  }
 
   const activeTickets = tickets.filter((t) => t.status === 'VALIDO')
   const visibleTickets = filter === 'ACTIVE' ? activeTickets : tickets
@@ -70,7 +117,7 @@ export default function AttendeeHomePage() {
         <div>
           <h1>Mis Tickets</h1>
           <p className="muted">
-            Hola, {user.first_name}. Selecciona un ticket para abrir tu pase QR en la puerta del evento.
+            Hola, {user.first_name}. Abre tu pase QR para ingresar o transfiere una entrada válida a otro asistente.
           </p>
         </div>
         <Link to="/asistente/eventos" className="btn btn-primary">
@@ -81,6 +128,11 @@ export default function AttendeeHomePage() {
       {acquired && (
         <div className="alert alert-success page-notice" role="status">
           ¡Listo! Ya tienes tu entrada para “{acquired}”. Toca la tarjeta para mostrar tu QR.
+        </div>
+      )}
+      {transferNotice && (
+        <div className="alert alert-success page-notice" role="status">
+          {transferNotice}
         </div>
       )}
       {error && (
@@ -134,10 +186,21 @@ export default function AttendeeHomePage() {
       ) : (
         <div className="ticket-list">
           {visibleTickets.map((ticket) => (
-            <TicketCard key={ticket.id} ticket={ticket} />
+            <TicketCard
+              key={ticket.id}
+              ticket={ticket}
+              onOpenTransfer={setTicketToTransfer}
+            />
           ))}
         </div>
       )}
+
+      <TransferTicketModal
+        ticket={ticketToTransfer}
+        onClose={() => setTicketToTransfer(null)}
+        onTransferred={handleTransferred}
+      />
     </section>
   )
 }
+

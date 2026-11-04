@@ -13,9 +13,11 @@ from .serializers import (
     AttendeeTicketSerializer,
     TicketPurchaseSerializer,
     TicketSerializer,
+    TicketTransferResponseSerializer,
+    TicketTransferSerializer,
     TicketValidationSerializer,
 )
-from .services import acquire_ticket
+from .services import acquire_ticket, transfer_ticket
 
 
 class TicketValidateView(APIView):
@@ -73,3 +75,33 @@ class TicketDetailView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         return Ticket.objects.filter(holder=self.request.user).select_related("event")
+
+
+class TicketTransferView(APIView):
+    """Transfiere un ticket válido a otro usuario registrado mediante su email (HU 2.3)."""
+
+    permission_classes = (IsAsistente,)
+
+    @extend_schema(
+        request=TicketTransferSerializer,
+        responses={200: TicketTransferResponseSerializer},
+    )
+    def post(self, request, pk):
+        serializer = TicketTransferSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        ticket, recipient = transfer_ticket(
+            user=request.user,
+            ticket_id=pk,
+            recipient_email=serializer.validated_data["email"],
+        )
+
+        return Response(
+            {
+                "detail": f"Ticket transferido exitosamente a {recipient.email}.",
+                "ticket_id": ticket.id,
+                "recipient_email": recipient.email,
+            },
+            status=status.HTTP_200_OK,
+        )
+

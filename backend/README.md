@@ -52,6 +52,7 @@ python manage.py test apps
 | GET    | `/api/tickets/`            | `ASISTENTE`                | Entradas del asistente                       |
 | POST   | `/api/tickets/`            | `ASISTENTE`                | Adquirir una entrada (`{"event": "<uuid>"}`) |
 | GET    | `/api/tickets/{id}/`       | `ASISTENTE`                | Detalle de una entrada propia                |
+| POST   | `/api/tickets/{id}/transfer/` | `ASISTENTE`             | Transfiere atómicamente una entrada válida (`{"email": "..."}`) |
 | POST   | `/api/tickets/validate/`   | `ORGANIZADOR`, `LOGISTICA` | Marca como usado el ticket del QR (`{"code": "<uuid>"}`) |
 
 Las peticiones autenticadas usan el encabezado `Authorization: Bearer <access>`.
