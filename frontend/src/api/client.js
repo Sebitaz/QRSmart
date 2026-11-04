@@ -39,6 +39,12 @@ function extractMessage(data) {
   if (!data || typeof data !== 'object') return null
   if (data.detail) return data.detail
   if (data.non_field_errors) return data.non_field_errors.join(' ')
+  const entries = Object.entries(data)
+  if (entries.length > 0) {
+    const [field, val] = entries[0]
+    const msg = Array.isArray(val) ? val.join(' ') : String(val)
+    return field === 'code' ? `Código QR inválido: ${msg}` : `${field}: ${msg}`
+  }
   return null
 }
 
