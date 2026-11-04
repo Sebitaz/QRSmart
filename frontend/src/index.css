@@ -198,3 +198,34 @@ h1, h2, h3 { line-height: 1.2; margin: 0 0 0.5rem; }
   .ticket-card { flex-direction: column; align-items: stretch; }
   .ticket-qr { align-self: center; }
 }
+
+/* vista pública de la entrada (la que abre el celular al escanear el QR) */
+.public-ticket-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 2rem 1rem;
+}
+.public-ticket-page .brand { font-size: 1.6rem; margin: 0; }
+.public-ticket { width: 100%; max-width: 420px; padding: 0; overflow: hidden; }
+.public-ticket-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1.25rem 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+.public-ticket-status strong { font-size: 1.35rem; }
+.public-ticket-status.status-valido { background: rgba(111, 227, 154, 0.15); color: var(--success); }
+.public-ticket-status.status-usado { background: var(--surface-2); color: var(--muted); }
+.public-ticket-status.status-anulado { background: rgba(255, 107, 107, 0.15); color: var(--danger); }
+.public-ticket-body { padding: 1.5rem; border-top: 1px dashed var(--border); }
+.public-ticket-body h1 { margin: 0 0 1rem; font-size: 1.4rem; }
+.public-ticket-body .alert { margin-bottom: 1rem; }
+.public-ticket-details { display: grid; gap: 0.9rem; margin: 0; }
+.public-ticket-details dt { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.public-ticket-details dd { margin: 0.15rem 0 0; }
+.public-ticket-footer { font-size: 0.85rem; }

@@ -10,6 +10,7 @@ import LoginPage from './pages/LoginPage'
 import StaffHomePage from './pages/logistica/StaffHomePage'
 import CreateEventPage from './pages/organizador/CreateEventPage'
 import OrganizerHomePage from './pages/organizador/OrganizerHomePage'
+import PublicTicketPage from './pages/publico/PublicTicketPage'
 import RegisterPage from './pages/RegisterPage'
 
 function App() {
@@ -21,6 +22,8 @@ function App() {
     <Routes>
       <Route path="/login" element={isAuthenticated ? <RoleRedirect /> : <LoginPage />} />
       <Route path="/registro" element={isAuthenticated ? <RoleRedirect /> : <RegisterPage />} />
+      {/* pública: es lo que abre el celular al escanear el QR de una entrada */}
+      <Route path="/entrada/:code" element={<PublicTicketPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>

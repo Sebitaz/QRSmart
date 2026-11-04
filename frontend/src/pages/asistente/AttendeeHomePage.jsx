@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { ticketsApi } from '../../api/tickets'
 import { useAuth } from '../../context/auth-context'
 import { formatRange } from '../../utils/dates'
+import { ticketPublicUrl } from '../../utils/ticketUrl'
 
 const STATUS_LABELS = {
   VALIDO: 'Válida',
@@ -25,7 +26,7 @@ function TicketCard({ ticket }) {
         </span>
       </div>
       <div className="ticket-qr">
-        <QRCodeSVG value={ticket.code} size={160} marginSize={2} title={`Entrada ${event.name}`} />
+        <QRCodeSVG value={ticketPublicUrl(ticket.code)} size={160} marginSize={2} title={`Entrada ${event.name}`} />
         <code className="ticket-code">{ticket.code.slice(0, 8).toUpperCase()}</code>
       </div>
     </article>
