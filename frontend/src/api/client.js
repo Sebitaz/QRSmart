@@ -1,4 +1,5 @@
-const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api').replace(/\/$/, '')
+// por defecto /api en el mismo origen: el proxy de Vite lo reenvía a Django
+const API_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '')
 const TOKENS_KEY = 'qrsmart.tokens'
 
 export const tokenStorage = {
