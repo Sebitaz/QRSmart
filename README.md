@@ -9,7 +9,43 @@ Sistema Inteligente de Control de Aforo y Accesos QR — Ingeniería de Software
 | `backend/`  | API REST (lógica de negocio, auth, eventos)   | Python · Django · DRF · JWT    |
 | `frontend/` | SPA para organizador, logística y asistentes  | React · Vite · React Router    |
 
-Cada carpeta tiene su propio README con instrucciones para ejecutarla.
+Cada carpeta tiene su propio README con instrucciones para ejecutarla:
+[backend/README.md](backend/README.md) · [frontend/README.md](frontend/README.md).
+
+## Inicio rápido
+
+Requisitos: Python 3.12+ y Node.js 20+. Desde la raíz del repositorio:
+
+```bash
+npm run setup   # solo la primera vez o cuando cambien dependencias
+npm run dev     # levanta backend (puerto 8000) y frontend (puerto 5173); Ctrl+C detiene ambos
+```
+
+| Comando                | Descripción                                                        |
+|------------------------|--------------------------------------------------------------------|
+| `npm run setup`        | Crea el `.venv`, instala dependencias de backend y frontend y migra |
+| `npm run dev`          | Inicia backend y frontend al mismo tiempo                          |
+| `npm run dev:backend`  | Inicia solo el backend                                             |
+| `npm run dev:frontend` | Inicia solo el frontend                                            |
+| `npm run build`        | Build de producción del frontend                                   |
+| `npm run lint`         | Linter del frontend                                                |
+
+- App: http://localhost:5173
+- API (Swagger): http://localhost:8000/api/docs/
+
+También se puede trabajar en cada carpeta por separado (ver sus README).
+
+## Historias de usuario implementadas
+
+| HU      | Descripción                              | Estado         |
+|---------|------------------------------------------|----------------|
+| HU 4.1  | Registro e Inicio de Sesión              | ✅ Implementada |
+| HU 4.2  | Redirección y Experiencia por Rol        | ✅ Implementada |
+| HU 4.3  | Control de Acceso en la API              | ✅ Implementada |
+| HU 1.1  | Creación de Eventos                      | ✅ Implementada |
+| HU 2.1  | Compra/Adquisición de ticket             | ✅ Implementada |
+| HU 2.2  | Visualización del Ticket QR              | ✅ Implementada |
+| HU 2.3  | Transferencia de Ticket                  | ✅ Implementada |
 
 ## Flujo de ramas (Git Flow simplificado)
 

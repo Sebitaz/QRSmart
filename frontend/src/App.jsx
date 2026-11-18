@@ -1,0 +1,49 @@
+import { Route, Routes } from 'react-router-dom'
+import AppLayout from './components/AppLayout'
+import ProtectedRoute from './components/ProtectedRoute'
+import RoleRedirect from './components/RoleRedirect'
+import { ROLES } from './constants/roles'
+import { useAuth } from './context/auth-context'
+import AttendeeHomePage from './pages/asistente/AttendeeHomePage'
+import EventsPage from './pages/asistente/EventsPage'
+import TicketDetailPage from './pages/asistente/TicketDetailPage'
+import LoginPage from './pages/LoginPage'
+import StaffHomePage from './pages/logistica/StaffHomePage'
+import CreateEventPage from './pages/organizador/CreateEventPage'
+import OrganizerHomePage from './pages/organizador/OrganizerHomePage'
+import RegisterPage from './pages/RegisterPage'
+
+function App() {
+  const { isAuthenticated, loading } = useAuth()
+
+  if (loading) return <p className="center muted">Cargando…</p>
+
+  return (
+    <Routes>
+      <Route path="/login" element={isAuthenticated ? <RoleRedirect /> : <LoginPage />} />
+      <Route path="/registro" element={isAuthenticated ? <RoleRedirect /> : <RegisterPage />} />
+
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AppLayout />}>
+          <Route element={<ProtectedRoute allowedRoles={[ROLES.ORGANIZADOR]} />}>
+            <Route path="/organizador" element={<OrganizerHomePage />} />
+            <Route path="/organizador/eventos/nuevo" element={<CreateEventPage />} />
+          </Route>
+          <Route element={<ProtectedRoute allowedRoles={[ROLES.LOGISTICA]} />}>
+            <Route path="/logistica" element={<StaffHomePage />} />
+          </Route>
+          <Route element={<ProtectedRoute allowedRoles={[ROLES.ASISTENTE]} />}>
+            <Route path="/asistente" element={<AttendeeHomePage />} />
+            <Route path="/asistente/mis-tickets" element={<AttendeeHomePage />} />
+            <Route path="/asistente/tickets/:ticketId" element={<TicketDetailPage />} />
+            <Route path="/asistente/eventos" element={<EventsPage />} />
+          </Route>
+        </Route>
+      </Route>
+
+      <Route path="*" element={<RoleRedirect />} />
+    </Routes>
+  )
+}
+
+export default App
