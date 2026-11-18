@@ -166,6 +166,48 @@ code {
   animation: pulseBeacon 2s infinite;
 }
 
+.live-pulse-dot.paused {
+  background: var(--muted);
+  box-shadow: none;
+  animation: none;
+}
+
+.organizer-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.capacity-alert-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.capacity-alert-banner svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.capacity-alert-list {
+  display: grid;
+  gap: 0.2rem;
+  margin-top: 0.35rem;
+  font-size: 0.86rem;
+}
+
+.simulator-card {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.simulator-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.9rem;
+}
+
 @keyframes pulseBeacon {
   0% {
     box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.65);
@@ -819,8 +861,19 @@ code {
   background: linear-gradient(90deg, #f59e0b, var(--warning));
 }
 
-.occupancy-full .occupancy-bar > div {
-  background: linear-gradient(90deg, #10b981, var(--success));
+.occupancy-critical {
+  border-color: rgba(251, 113, 133, 0.4);
+}
+
+.occupancy-critical .occupancy-bar > div {
+  background: linear-gradient(90deg, #f43f5e, var(--danger));
+}
+
+.occupancy-submeta {
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* ===== Entradas del Asistente (Mis Tickets) ===== */

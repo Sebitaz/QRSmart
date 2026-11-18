@@ -8,17 +8,33 @@ MAX_CAPACITY = 100_000
 
 class EventSerializer(serializers.ModelSerializer):
     organizer = serializers.SerializerMethodField()
+    occupancy_percentage = serializers.SerializerMethodField()
+    is_capacity_alert = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
         fields = (
             "id", "name", "description", "location", "start_at", "end_at",
-            "capacity", "current_occupancy", "status", "organizer", "created_at",
+            "capacity", "current_occupancy", "occupancy_percentage",
+            "is_capacity_alert", "status", "organizer", "created_at",
         )
-        read_only_fields = ("id", "current_occupancy", "status", "organizer", "created_at")
+        read_only_fields = (
+            "id", "current_occupancy", "occupancy_percentage",
+            "is_capacity_alert", "status", "organizer", "created_at",
+        )
 
     def get_organizer(self, obj):
         return {"id": obj.organizer_id, "full_name": obj.organizer.get_full_name()}
+
+    def get_occupancy_percentage(self, obj) -> float:
+        if not obj.capacity:
+            return 0.0
+        return round((obj.current_occupancy / obj.capacity) * 100, 1)
+
+    def get_is_capacity_alert(self, obj) -> bool:
+        if not obj.capacity:
+            return False
+        return (obj.current_occupancy / obj.capacity) >= 0.90
 
     def validate_name(self, value):
         value = value.strip()
