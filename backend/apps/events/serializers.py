@@ -48,3 +48,20 @@ class EventSerializer(serializers.ModelSerializer):
         if attrs["end_at"] <= attrs["start_at"]:
             raise serializers.ValidationError({"end_at": "La fecha de fin debe ser posterior a la de inicio."})
         return attrs
+
+
+class AvailableEventSerializer(serializers.ModelSerializer):
+    organizer = serializers.CharField(source="organizer.get_full_name", read_only=True)
+    tickets_available = serializers.SerializerMethodField()
+    has_ticket = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = Event
+        fields = (
+            "id", "name", "description", "location", "start_at", "end_at",
+            "capacity", "tickets_available", "has_ticket", "status", "organizer",
+        )
+        read_only_fields = fields
+
+    def get_tickets_available(self, obj) -> int:
+        return max(obj.capacity - obj.tickets_sold, 0)

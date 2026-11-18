@@ -13,7 +13,7 @@ export const ROLE_LABELS = {
 export const ROLE_HOME = {
   [ROLES.ORGANIZADOR]: '/organizador',
   [ROLES.LOGISTICA]: '/logistica',
-  [ROLES.ASISTENTE]: '/asistente',
+  [ROLES.ASISTENTE]: '/asistente/mis-tickets',
 }
 
 export const ROLE_NAV = {
@@ -22,7 +22,10 @@ export const ROLE_NAV = {
     { to: '/organizador/eventos/nuevo', label: 'Crear evento' },
   ],
   [ROLES.LOGISTICA]: [{ to: '/logistica', label: 'Escáner' }],
-  [ROLES.ASISTENTE]: [{ to: '/asistente', label: 'Mis entradas' }],
+  [ROLES.ASISTENTE]: [
+    { to: '/asistente/mis-tickets', label: 'Mis Tickets' },
+    { to: '/asistente/eventos', label: 'Eventos' },
+  ],
 }
 
 export const homeForRole = (role) => ROLE_HOME[role] ?? '/login'
