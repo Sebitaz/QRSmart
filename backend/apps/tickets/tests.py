@@ -75,6 +75,8 @@ class TicketValidationTests(APITestCase):
         self.assertEqual(self.ticket.status, Ticket.Status.USADO)
         self.assertEqual(self.ticket.validated_by, self.organizer)
         self.assertIsNotNone(self.ticket.used_at)
+        self.ticket.event.refresh_from_db()
+        self.assertEqual(self.ticket.event.current_occupancy, 1)
 
     def test_logistica_can_validate_ticket(self):
         self.client.force_authenticate(self.logistica)

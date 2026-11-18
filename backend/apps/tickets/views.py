@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import F
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
@@ -7,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.permissions import IsAsistente, IsOrganizadorOrLogistica
+from apps.events.models import Event
 
 from .models import Ticket
 from .serializers import (
@@ -45,10 +47,21 @@ class TicketValidateView(APIView):
                     {"detail": f"El ticket no es válido (estado: {ticket.get_status_display()})."},
                     status=status.HTTP_409_CONFLICT,
                 )
+
+            event = Event.objects.select_for_update().get(pk=ticket.event_id)
+            if event.current_occupancy >= event.capacity:
+                return Response(
+                    {"detail": "El evento ya alcanzó su aforo máximo."},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
             ticket.status = Ticket.Status.USADO
             ticket.used_at = timezone.now()
             ticket.validated_by = request.user
             ticket.save(update_fields=("status", "used_at", "validated_by"))
+
+            event.current_occupancy = F("current_occupancy") + 1
+            event.save(update_fields=("current_occupancy", "updated_at"))
 
         return Response(TicketSerializer(ticket).data, status=status.HTTP_200_OK)
 

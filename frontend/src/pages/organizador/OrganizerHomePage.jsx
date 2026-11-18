@@ -46,11 +46,33 @@ export default function OrganizerHomePage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    eventsApi
-      .list()
-      .then(setEvents)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
+    let active = true
+
+    const fetchEvents = () => {
+      eventsApi
+        .list()
+        .then((data) => {
+          if (active) {
+            setEvents(data)
+            setError('')
+          }
+        })
+        .catch((err) => {
+          if (active) setError(err.message)
+        })
+        .finally(() => {
+          if (active) setLoading(false)
+        })
+    }
+
+    fetchEvents()
+    // Actualiza el aforo en tiempo real mientras se escanean tickets en puerta
+    const intervalId = setInterval(fetchEvents, 4000)
+
+    return () => {
+      active = false
+      clearInterval(intervalId)
+    }
   }, [])
 
   return (
