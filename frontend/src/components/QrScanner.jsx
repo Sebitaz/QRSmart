@@ -1,28 +1,33 @@
 import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { ticketsApi } from '../api/tickets'
+import { soundFx } from '../utils/sound'
+import { IconAlert, IconCheck, IconQrCode, IconX } from './Icons'
 
 const COOLDOWN_MS = 2800
 
 const OVERLAY_CONFIG = {
   ALLOWED: {
     themeClass: 'scan-overlay-allowed',
-    icon: '✓',
     title: 'Acceso Permitido',
     subtitle: 'Entrada validada correctamente',
   },
   USED: {
     themeClass: 'scan-overlay-used',
-    icon: '✕',
     title: 'Ticket Ya Usado',
     subtitle: 'Esta entrada ya fue registrada anteriormente',
   },
   INVALID: {
     themeClass: 'scan-overlay-invalid',
-    icon: '⚠',
     title: 'Ticket Inválido',
     subtitle: 'El código QR no corresponde a una entrada válida',
   },
+}
+
+function OverlayBadgeIcon({ type }) {
+  if (type === 'ALLOWED') return <IconCheck size={42} />
+  if (type === 'USED') return <IconX size={42} />
+  return <IconAlert size={40} />
 }
 
 async function safelyStopScanner(scanner) {
@@ -94,6 +99,7 @@ export default function QrScanner() {
 
       try {
         const data = await ticketsApi.validate(cleanedCode)
+        soundFx.scanAllowed()
         outcome = {
           type: 'ALLOWED',
           code: cleanedCode,
@@ -102,6 +108,7 @@ export default function QrScanner() {
         }
       } catch (err) {
         if (err.status === 409) {
+          soundFx.scanUsed()
           outcome = {
             type: 'USED',
             code: cleanedCode,
@@ -109,6 +116,7 @@ export default function QrScanner() {
             timestamp: new Date().toLocaleTimeString('es-CO'),
           }
         } else if (err.status === 404 || err.status === 400) {
+          soundFx.scanInvalid()
           outcome = {
             type: 'INVALID',
             code: cleanedCode,
@@ -119,6 +127,7 @@ export default function QrScanner() {
             timestamp: new Date().toLocaleTimeString('es-CO'),
           }
         } else {
+          soundFx.scanInvalid()
           outcome = {
             type: 'INVALID',
             code: cleanedCode,
@@ -212,6 +221,7 @@ export default function QrScanner() {
   const handleManualSubmit = (event) => {
     event.preventDefault()
     if (!manualCode.trim() || isProcessingRef.current) return
+    soundFx.tap()
     isProcessingRef.current = true
     const codeToValidate = manualCode.trim()
     setManualCode('')
@@ -242,6 +252,7 @@ export default function QrScanner() {
               <span className="reticle-corner reticle-tr" />
               <span className="reticle-corner reticle-bl" />
               <span className="reticle-corner reticle-br" />
+              <span className="scanner-laser-beam" />
             </div>
           )}
         </div>
@@ -267,10 +278,11 @@ export default function QrScanner() {
             />
             <button
               type="submit"
-              className="btn btn-primary"
+              className="btn btn-primary btn-icon-label"
               disabled={!manualCode.trim() || validating || Boolean(scanResult)}
             >
-              Validar
+              <IconQrCode size={15} />
+              <span>Validar</span>
             </button>
           </div>
         </form>
@@ -286,7 +298,7 @@ export default function QrScanner() {
                   {OVERLAY_CONFIG[item.type]?.title}
                 </span>
                 <span className="scanner-history-detail">{item.detail}</span>
-                <code className="ticket-code">{item.timestamp}</code>
+                <code className="ticket-code tabular-nums">{item.timestamp}</code>
               </li>
             ))}
           </ul>
@@ -299,11 +311,14 @@ export default function QrScanner() {
           role="alertdialog"
           aria-live="assertive"
           aria-labelledby="scan-result-title"
-          onClick={resumeScanner}
+          onClick={() => {
+            soundFx.tap()
+            resumeScanner()
+          }}
         >
           <div className="scan-overlay-content">
             <div className="scan-overlay-icon" aria-hidden="true">
-              {activeOverlay.icon}
+              <OverlayBadgeIcon type={scanResult.type} />
             </div>
             <h2 id="scan-result-title" className="scan-overlay-title">
               {activeOverlay.title}
@@ -316,7 +331,15 @@ export default function QrScanner() {
             <div className="scan-cooldown-bar" aria-hidden="true">
               <div className="scan-cooldown-progress" />
             </div>
-            <button type="button" className="btn scan-overlay-btn" onClick={resumeScanner}>
+            <button
+              type="button"
+              className="btn scan-overlay-btn"
+              onClick={(event) => {
+                event.stopPropagation()
+                soundFx.tap()
+                resumeScanner()
+              }}
+            >
               Escanear siguiente asistente ahora
             </button>
           </div>
@@ -325,4 +348,3 @@ export default function QrScanner() {
     </div>
   )
 }
-

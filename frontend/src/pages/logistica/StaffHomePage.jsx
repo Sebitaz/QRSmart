@@ -1,3 +1,4 @@
+import { IconQrCode } from '../../components/Icons'
 import QrScanner from '../../components/QrScanner'
 import { useAuth } from '../../context/auth-context'
 
@@ -7,9 +8,13 @@ export default function StaffHomePage() {
     <section className="scanner-page">
       <div className="page-header">
         <div>
-          <h1>Control de acceso · Escáner QR</h1>
+          <span className="eyebrow eyebrow-live">
+            <IconQrCode size={13} />
+            Terminal de acceso
+          </span>
+          <h1>Control de acceso</h1>
           <p className="muted">
-            Hola, {user.first_name}. Apunta la cámara trasera al código QR del asistente para validar su ingreso en tiempo real.
+            Hola, {user.first_name}. Apunta la cámara trasera al pase QR del asistente para validar en tiempo real.
           </p>
         </div>
       </div>
@@ -18,4 +23,3 @@ export default function StaffHomePage() {
     </section>
   )
 }
-

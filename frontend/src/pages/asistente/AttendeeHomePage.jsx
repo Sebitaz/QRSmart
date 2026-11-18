@@ -2,9 +2,17 @@ import { QRCodeSVG } from 'qrcode.react'
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { ticketsApi } from '../../api/tickets'
+import {
+  IconCalendar,
+  IconMapPin,
+  IconQrCode,
+  IconSend,
+  IconTicket,
+} from '../../components/Icons'
 import TransferTicketModal from '../../components/TransferTicketModal'
 import { useAuth } from '../../context/auth-context'
 import { formatRange } from '../../utils/dates'
+import { soundFx } from '../../utils/sound'
 
 const STATUS_LABELS = {
   VALIDO: 'Válida · Compra activa',
@@ -12,48 +20,69 @@ const STATUS_LABELS = {
   ANULADO: 'Anulada',
 }
 
-function TicketCard({ ticket, onOpenTransfer }) {
+function TicketCard({ ticket, index, onOpenTransfer }) {
   const { event } = ticket
   const isValid = ticket.status === 'VALIDO'
   // REGLA ESTRICTA HU 2.2: Solo el UUID del ticket generado por el backend
   const qrUuidValue = String(ticket.code)
 
   return (
-    <article className={`card ticket-card ${isValid ? '' : 'ticket-inactive'}`}>
+    <article
+      className={`card ticket-card stagger-item ${isValid ? '' : 'ticket-inactive'}`}
+      style={{ '--stagger': index }}
+    >
       <div className="ticket-info">
         <div className="ticket-info-top">
           <span className={`badge badge-ticket-${ticket.status.toLowerCase()}`}>
+            {isValid && <span className="status-dot" aria-hidden="true" />}
             {STATUS_LABELS[ticket.status] ?? ticket.status}
           </span>
           <code className="ticket-code">#{qrUuidValue.slice(0, 8).toUpperCase()}</code>
         </div>
+
         <h3>
           <Link
             to={`/asistente/tickets/${ticket.id}`}
             state={{ ticket }}
             className="ticket-title-link"
+            onClick={() => soundFx.transition()}
           >
             {event.name}
           </Link>
         </h3>
-        <p className="muted">📍 {event.location}</p>
-        <p className="muted">🗓️ {formatRange(event.start_at, event.end_at)}</p>
+
+        <div className="meta-rows">
+          <p className="meta-row">
+            <IconMapPin size={14} />
+            <span>{event.location}</span>
+          </p>
+          <p className="meta-row">
+            <IconCalendar size={14} />
+            <span>{formatRange(event.start_at, event.end_at)}</span>
+          </p>
+        </div>
 
         <div className="ticket-card-actions">
           <Link
             to={`/asistente/tickets/${ticket.id}`}
             state={{ ticket }}
-            className="btn btn-primary btn-sm"
+            className="btn btn-primary btn-sm btn-icon-label"
+            onClick={() => soundFx.transition()}
           >
-            Ver pase QR
+            <IconQrCode size={15} />
+            <span>Ver pase QR</span>
           </Link>
           {isValid && (
             <button
               type="button"
-              className="btn btn-outline btn-sm"
-              onClick={() => onOpenTransfer(ticket)}
+              className="btn btn-outline btn-sm btn-icon-label"
+              onClick={() => {
+                soundFx.tap()
+                onOpenTransfer(ticket)
+              }}
             >
-              Transferir
+              <IconSend size={14} />
+              <span>Transferir</span>
             </button>
           )}
         </div>
@@ -64,14 +93,17 @@ function TicketCard({ ticket, onOpenTransfer }) {
         state={{ ticket }}
         className="ticket-qr ticket-qr-link"
         aria-label={`Abrir código QR para ${event.name}`}
+        onClick={() => soundFx.transition()}
       >
-        <QRCodeSVG
-          value={qrUuidValue}
-          size={136}
-          level="M"
-          marginSize={2}
-          title={`Entrada ${event.name}`}
-        />
+        <div className="ticket-qr-frame">
+          <QRCodeSVG
+            value={qrUuidValue}
+            size={128}
+            level="M"
+            marginSize={2}
+            title={`Entrada ${event.name}`}
+          />
+        </div>
         <code className="ticket-code">{qrUuidValue.slice(0, 8).toUpperCase()}</code>
       </Link>
     </article>
@@ -100,6 +132,7 @@ export default function AttendeeHomePage() {
   }, [])
 
   const handleTransferred = (transferredTicket, response) => {
+    soundFx.success()
     // HU 2.3: Actualiza el estado inmediatamente para que desaparezca sin recargar la página
     setTickets((prev) => prev.filter((item) => item.id !== transferredTicket.id))
     setTicketToTransfer(null)
@@ -115,13 +148,22 @@ export default function AttendeeHomePage() {
     <section>
       <div className="page-header">
         <div>
+          <span className="eyebrow">
+            <IconTicket size={13} />
+            Billetera digital
+          </span>
           <h1>Mis Tickets</h1>
           <p className="muted">
             Hola, {user.first_name}. Abre tu pase QR para ingresar o transfiere una entrada válida a otro asistente.
           </p>
         </div>
-        <Link to="/asistente/eventos" className="btn btn-primary">
-          Comprar / Buscar eventos
+        <Link
+          to="/asistente/eventos"
+          className="btn btn-primary btn-icon-label"
+          onClick={() => soundFx.tap()}
+        >
+          <IconTicket size={16} />
+          <span>Comprar / Buscar eventos</span>
         </Link>
       </div>
 
@@ -147,48 +189,71 @@ export default function AttendeeHomePage() {
             type="button"
             role="tab"
             aria-selected={filter === 'ACTIVE'}
-            className={`btn btn-sm ${filter === 'ACTIVE' ? 'btn-primary' : 'btn-outline'}`}
-            onClick={() => setFilter('ACTIVE')}
+            className={`tab-pill ${filter === 'ACTIVE' ? 'tab-pill-active' : ''}`}
+            onClick={() => {
+              soundFx.tap()
+              setFilter('ACTIVE')
+            }}
           >
-            Compras activas ({activeTickets.length})
+            Compras activas
+            <span className="tab-count">{activeTickets.length}</span>
           </button>
           <button
             type="button"
             role="tab"
             aria-selected={filter === 'ALL'}
-            className={`btn btn-sm ${filter === 'ALL' ? 'btn-primary' : 'btn-outline'}`}
-            onClick={() => setFilter('ALL')}
+            className={`tab-pill ${filter === 'ALL' ? 'tab-pill-active' : ''}`}
+            onClick={() => {
+              soundFx.tap()
+              setFilter('ALL')
+            }}
           >
-            Todos ({tickets.length})
+            Historial completo
+            <span className="tab-count">{tickets.length}</span>
           </button>
         </div>
       )}
 
       {loading ? (
-        <p className="muted">Cargando tus tickets digitales…</p>
+        <div className="skeleton-list" aria-busy="true">
+          <div className="card skeleton-card" />
+          <div className="card skeleton-card" />
+        </div>
       ) : visibleTickets.length === 0 ? (
-        <div className="card placeholder">
+        <div className="card placeholder empty-state">
+          <IconTicket size={28} />
           {tickets.length === 0 ? (
-            <>
+            <p>
               Aún no tienes tickets activos.{' '}
-              <Link to="/asistente/eventos">Explora los eventos disponibles</Link>.
-            </>
+              <Link to="/asistente/eventos" onClick={() => soundFx.tap()}>
+                Explora los eventos disponibles
+              </Link>
+              .
+            </p>
           ) : (
-            <>
+            <p>
               No tienes compras activas pendientes por usar.{' '}
-              <button type="button" className="link-button" onClick={() => setFilter('ALL')}>
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => {
+                  soundFx.tap()
+                  setFilter('ALL')
+                }}
+              >
                 Ver historial completo
               </button>
               .
-            </>
+            </p>
           )}
         </div>
       ) : (
         <div className="ticket-list">
-          {visibleTickets.map((ticket) => (
+          {visibleTickets.map((ticket, index) => (
             <TicketCard
               key={ticket.id}
               ticket={ticket}
+              index={index}
               onOpenTransfer={setTicketToTransfer}
             />
           ))}
@@ -197,10 +262,12 @@ export default function AttendeeHomePage() {
 
       <TransferTicketModal
         ticket={ticketToTransfer}
-        onClose={() => setTicketToTransfer(null)}
+        onClose={() => {
+          soundFx.tap()
+          setTicketToTransfer(null)
+        }}
         onTransferred={handleTransferred}
       />
     </section>
   )
 }
-

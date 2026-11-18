@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ticketsApi } from '../api/tickets'
+import { soundFx } from '../utils/sound'
+import { IconSend, IconShield } from './Icons'
 
 export default function TransferTicketModal({ ticket, onClose, onTransferred }) {
   const [email, setEmail] = useState('')
@@ -23,6 +25,7 @@ export default function TransferTicketModal({ ticket, onClose, onTransferred }) 
     event.preventDefault()
     const trimmedEmail = email.trim()
     if (!trimmedEmail) {
+      soundFx.error()
       setFieldError('Ingresa el correo electrónico del destinatario.')
       return
     }
@@ -35,6 +38,7 @@ export default function TransferTicketModal({ ticket, onClose, onTransferred }) 
       const response = await ticketsApi.transfer(ticket.id, trimmedEmail)
       onTransferred(ticket, response)
     } catch (err) {
+      soundFx.error()
       if (err.fieldErrors?.email) {
         setFieldError(err.fieldErrors.email)
       } else {
@@ -58,7 +62,10 @@ export default function TransferTicketModal({ ticket, onClose, onTransferred }) 
       <div className="modal-card">
         <div className="modal-header">
           <div>
-            <span className="badge badge-asistente">Transferencia segura</span>
+            <span className="badge badge-asistente badge-icon-row">
+              <IconShield size={12} />
+              Transferencia atómica segura
+            </span>
             <h2 id="transfer-modal-title">Transferir ticket</h2>
           </div>
           <button
@@ -120,8 +127,9 @@ export default function TransferTicketModal({ ticket, onClose, onTransferred }) 
             >
               Cancelar
             </button>
-            <button type="submit" className="btn btn-primary" disabled={submitting}>
-              {submitting ? 'Transfiriendo…' : 'Confirmar transferencia'}
+            <button type="submit" className="btn btn-primary btn-icon-label" disabled={submitting}>
+              <IconSend size={15} />
+              <span>{submitting ? 'Transfiriendo…' : 'Confirmar transferencia'}</span>
             </button>
           </div>
         </form>
@@ -129,4 +137,3 @@ export default function TransferTicketModal({ ticket, onClose, onTransferred }) 
     </div>
   )
 }
-
