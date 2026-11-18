@@ -74,10 +74,10 @@ WSGI_APPLICATION = "config.wsgi.application"
 AUTH_USER_MODEL = "accounts.User"
 
 
-# si no hay DATABASE_URL usa sqlite
+# Conexión a PostgreSQL en Supabase (o DATABASE_URL desde .env)
 DATABASES = {
     "default": dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        default="postgresql://postgres.behuwlkqzwvtupwiomyj:voTJpGtApyeIlrby@aws-0-us-west-2.pooler.supabase.com:5432/postgres?sslmode=require",
         conn_max_age=600,
     )
 }
