@@ -8,6 +8,7 @@ MAX_CAPACITY = 100_000
 
 class EventSerializer(serializers.ModelSerializer):
     organizer = serializers.SerializerMethodField()
+    current_occupancy = serializers.SerializerMethodField()
     occupancy_percentage = serializers.SerializerMethodField()
     is_capacity_alert = serializers.SerializerMethodField()
 
@@ -26,15 +27,23 @@ class EventSerializer(serializers.ModelSerializer):
     def get_organizer(self, obj):
         return {"id": obj.organizer_id, "full_name": obj.organizer.get_full_name()}
 
+    def get_current_occupancy(self, obj) -> int:
+        used_count = getattr(obj, "used_tickets_count", None)
+        if used_count is None:
+            used_count = obj.tickets.filter(status="USADO").count()
+        return max(obj.current_occupancy, used_count)
+
     def get_occupancy_percentage(self, obj) -> float:
         if not obj.capacity:
             return 0.0
-        return round((obj.current_occupancy / obj.capacity) * 100, 1)
+        occupancy = self.get_current_occupancy(obj)
+        return round((occupancy / obj.capacity) * 100, 1)
 
     def get_is_capacity_alert(self, obj) -> bool:
         if not obj.capacity:
             return False
-        return (obj.current_occupancy / obj.capacity) >= 0.90
+        occupancy = self.get_current_occupancy(obj)
+        return (occupancy / obj.capacity) >= 0.90
 
     def validate_name(self, value):
         value = value.strip()
