@@ -1,5 +1,4 @@
 from django.db import transaction
-from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
@@ -98,7 +97,7 @@ class TicketValidateView(APIView):
 
             # HU 1.2: actualiza inmediatamente el aforo con el número de personas ingresadas
             event.current_occupancy = event.tickets.filter(status=Ticket.Status.USADO).count()
-            event.save(update_fields=("current_occupancy",))
+            event.save(update_fields=("current_occupancy", "updated_at"))
 
         data = TicketSerializer(ticket).data
         data["message"] = "Acceso Permitido"

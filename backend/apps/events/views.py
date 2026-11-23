@@ -15,7 +15,11 @@ class EventListCreateView(generics.ListCreateAPIView):
     serializer_class = EventSerializer
 
     def get_queryset(self):
-        return Event.objects.filter(organizer=self.request.user).select_related("organizer")
+        return (
+            Event.objects.filter(organizer=self.request.user)
+            .select_related("organizer")
+            .annotate(used_tickets_count=Count("tickets", filter=Q(tickets__status=Ticket.Status.USADO)))
+        )
 
     def perform_create(self, serializer):
         serializer.save(organizer=self.request.user)
@@ -26,7 +30,11 @@ class EventDetailView(generics.RetrieveAPIView):
     serializer_class = EventSerializer
 
     def get_queryset(self):
-        return Event.objects.filter(organizer=self.request.user).select_related("organizer")
+        return (
+            Event.objects.filter(organizer=self.request.user)
+            .select_related("organizer")
+            .annotate(used_tickets_count=Count("tickets", filter=Q(tickets__status=Ticket.Status.USADO)))
+        )
 
 
 class AvailableEventListView(generics.ListAPIView):

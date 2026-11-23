@@ -2,8 +2,19 @@ import { QRCodeSVG } from 'qrcode.react'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ticketsApi } from '../../api/tickets'
+import {
+  BrandLogo,
+  IconArrowLeft,
+  IconCalendar,
+  IconCheck,
+  IconCopy,
+  IconMapPin,
+  IconSend,
+  IconShield,
+} from '../../components/Icons'
 import TransferTicketModal from '../../components/TransferTicketModal'
 import { formatDate, formatRange } from '../../utils/dates'
+import { soundFx } from '../../utils/sound'
 
 const STATUS_META = {
   VALIDO: {
@@ -63,6 +74,7 @@ export default function TicketDetailPage() {
     if (!ticket?.code) return
     try {
       await navigator.clipboard.writeText(String(ticket.code))
+      soundFx.transition()
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
@@ -73,7 +85,7 @@ export default function TicketDetailPage() {
   if (loading && !ticket) {
     return (
       <section className="wallet-container">
-        <p className="center muted">Cargando tu ticket digital…</p>
+        <div className="card skeleton-card wallet-skeleton" />
       </section>
     )
   }
@@ -81,8 +93,9 @@ export default function TicketDetailPage() {
   if (error || !ticket) {
     return (
       <section className="wallet-container">
-        <Link to="/asistente/mis-tickets" className="back-link">
-          ← Volver a Mis Tickets
+        <Link to="/asistente/mis-tickets" className="back-link" onClick={() => soundFx.tap()}>
+          <IconArrowLeft size={15} />
+          <span>Volver a Mis Tickets</span>
         </Link>
         <div className="alert alert-error" role="alert">
           {error || 'No se encontró el ticket solicitado.'}
@@ -104,8 +117,9 @@ export default function TicketDetailPage() {
 
   return (
     <section className="wallet-container">
-      <Link to="/asistente/mis-tickets" className="back-link">
-        ← Volver a Mis Tickets
+      <Link to="/asistente/mis-tickets" className="back-link" onClick={() => soundFx.tap()}>
+        <IconArrowLeft size={15} />
+        <span>Volver a Mis Tickets</span>
       </Link>
 
       {acquired && (
@@ -114,13 +128,21 @@ export default function TicketDetailPage() {
         </div>
       )}
 
-      <article className={`wallet-pass ${isValid ? '' : 'wallet-pass-inactive'}`}>
+      <article className={`wallet-pass ${isValid ? 'wallet-pass-valid' : 'wallet-pass-inactive'}`}>
+        <div className="wallet-foil-strip" aria-hidden="true" />
+
         <header className="wallet-pass-header">
           <div className="wallet-pass-brand">
-            <span className="brand">
-              QR<span>Smart</span> Pass
+            <div className="wallet-brand-lockup">
+              <BrandLogo size={22} />
+              <span className="brand">
+                QR<span>Smart</span> Pass
+              </span>
+            </div>
+            <span className={`badge ${statusInfo.badgeClass}`}>
+              {isValid && <span className="status-dot" aria-hidden="true" />}
+              {statusInfo.shortLabel}
             </span>
-            <span className={`badge ${statusInfo.badgeClass}`}>{statusInfo.shortLabel}</span>
           </div>
           <h1 className="wallet-event-title">{event.name}</h1>
           <p className="wallet-status-caption">{statusInfo.label}</p>
@@ -128,9 +150,13 @@ export default function TicketDetailPage() {
 
         <div className="wallet-qr-section">
           <div className="wallet-qr-frame" aria-label="Código QR de acceso al evento">
+            <span className="qr-crop qr-crop-tl" aria-hidden="true" />
+            <span className="qr-crop qr-crop-tr" aria-hidden="true" />
+            <span className="qr-crop qr-crop-bl" aria-hidden="true" />
+            <span className="qr-crop qr-crop-br" aria-hidden="true" />
             <QRCodeSVG
               value={qrUuidValue}
-              size={240}
+              size={232}
               level="M"
               marginSize={3}
               title={`Ticket QR · ${event.name}`}
@@ -146,18 +172,23 @@ export default function TicketDetailPage() {
             <div className="wallet-action-row">
               <button
                 type="button"
-                className="btn btn-outline btn-sm wallet-copy-btn"
+                className={`btn btn-sm btn-icon-label ${copied ? 'btn-primary' : 'btn-outline'}`}
                 onClick={handleCopyUuid}
               >
-                {copied ? '¡UUID copiado!' : 'Copiar código'}
+                {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                <span>{copied ? 'UUID copiado' : 'Copiar código'}</span>
               </button>
               {isValid && (
                 <button
                   type="button"
-                  className="btn btn-outline btn-sm wallet-copy-btn"
-                  onClick={() => setShowTransferModal(true)}
+                  className="btn btn-outline btn-sm btn-icon-label"
+                  onClick={() => {
+                    soundFx.tap()
+                    setShowTransferModal(true)
+                  }}
                 >
-                  Transferir entrada
+                  <IconSend size={14} />
+                  <span>Transferir entrada</span>
                 </button>
               )}
             </div>
@@ -173,37 +204,51 @@ export default function TicketDetailPage() {
         <footer className="wallet-pass-details">
           <div className="wallet-detail-grid">
             <div className="wallet-detail-item">
-              <span className="wallet-detail-label">Lugar</span>
+              <span className="wallet-detail-label">
+                <IconMapPin size={12} />
+                Lugar
+              </span>
               <strong className="wallet-detail-value">{event.location}</strong>
             </div>
             <div className="wallet-detail-item">
-              <span className="wallet-detail-label">Horario del evento</span>
+              <span className="wallet-detail-label">
+                <IconCalendar size={12} />
+                Horario del evento
+              </span>
               <strong className="wallet-detail-value">
                 {formatRange(event.start_at, event.end_at)}
               </strong>
             </div>
-            <div className="wallet-detail-item">
-              <span className="wallet-detail-label">Adquirido el</span>
-              <span className="wallet-detail-value">{formatDate(ticket.created_at)}</span>
-            </div>
-            {ticket.used_at && (
+            <div className="wallet-detail-row-split">
               <div className="wallet-detail-item">
-                <span className="wallet-detail-label">Validado en puerta</span>
-                <span className="wallet-detail-value">{formatDate(ticket.used_at)}</span>
+                <span className="wallet-detail-label">Adquirido el</span>
+                <span className="wallet-detail-value">{formatDate(ticket.created_at)}</span>
               </div>
-            )}
+              {ticket.used_at && (
+                <div className="wallet-detail-item">
+                  <span className="wallet-detail-label">Validado en puerta</span>
+                  <span className="wallet-detail-value">{formatDate(ticket.used_at)}</span>
+                </div>
+              )}
+            </div>
           </div>
           <p className="wallet-privacy-note">
-            🔒 Privacidad protegida: este QR solo codifica el UUID único de tu entrada sin incluir
-            datos personales.
+            <IconShield size={14} />
+            <span>
+              Privacidad protegida: este QR solo codifica el UUID único de tu entrada sin datos personales.
+            </span>
           </p>
         </footer>
       </article>
 
       <TransferTicketModal
         ticket={showTransferModal ? ticket : null}
-        onClose={() => setShowTransferModal(false)}
+        onClose={() => {
+          soundFx.tap()
+          setShowTransferModal(false)
+        }}
         onTransferred={(transferredTicket, response) => {
+          soundFx.success()
           navigate('/asistente/mis-tickets', {
             replace: true,
             state: {
@@ -215,4 +260,3 @@ export default function TicketDetailPage() {
     </section>
   )
 }
-

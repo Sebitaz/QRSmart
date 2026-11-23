@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { eventsApi } from '../../api/events'
 import { ticketsApi } from '../../api/tickets'
+import { IconAlert, IconCalendar, IconMapPin, IconPlus, IconQrCode } from '../../components/Icons'
 import { useAuth } from '../../context/auth-context'
+import { soundFx } from '../../utils/sound'
 
 const STATUS_LABELS = {
   PROGRAMADO: 'Programado',
@@ -12,93 +14,78 @@ const STATUS_LABELS = {
 }
 
 const dateFormat = new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
-const timeFormat = new Intl.DateTimeFormat('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+const timeFormat = new Intl.DateTimeFormat('es-CO', {
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+})
 
-function EventCard({ event }) {
-  const percent = event.capacity ? Math.round((event.current_occupancy / event.capacity) * 100) : 0
+function EventCard({ event, index }) {
+  const percent = event.capacity
+    ? Math.min(100, Math.round((event.current_occupancy / event.capacity) * 100))
+    : 0
   const isCritical = percent >= 90
   const isWarning = percent >= 80 && percent < 90
   const remaining = Math.max(event.capacity - event.current_occupancy, 0)
-
-  let alertLevelClass = ''
-  let barLevelClass = 'is-normal'
-  if (isCritical) {
-    alertLevelClass = 'is-danger'
-    barLevelClass = 'is-danger'
-  } else if (isWarning) {
-    alertLevelClass = 'is-warning'
-    barLevelClass = 'is-warning'
-  }
+  const barTone = isCritical ? 'occupancy-critical' : isWarning ? 'occupancy-high' : ''
 
   return (
-    <article className={`card event-card ${alertLevelClass}`}>
+    <article
+      className={`card event-card stagger-item ${barTone}`}
+      style={{ '--stagger': index }}
+    >
       <div className="event-card-header">
         <div>
           <h3>{event.name}</h3>
           <span className="badge badge-status">{STATUS_LABELS[event.status] ?? event.status}</span>
         </div>
         {isCritical && (
-          <span className="badge badge-alert-danger" title="Aforo al 90% o más de capacidad">
-            {percent >= 100 ? '⛔ 100% Aforo' : `🚨 ${percent}% Crítico`}
+          <span className="badge badge-ticket-anulado" title="Aforo al 90% o más de capacidad">
+            {percent >= 100 ? '100% Lleno' : `${percent}% Crítico`}
           </span>
         )}
         {isWarning && (
-          <span className="badge badge-alert-warning" title="Aforo preventivo (80% a 89%)">
-            ⚠️ {percent}% Alto
+          <span className="badge badge-logistica" title="Aforo preventivo (80% a 89%)">
+            {percent}% Alto
           </span>
         )}
       </div>
 
-      <p className="muted">{event.location}</p>
-      <p className="muted">
-        {dateFormat.format(new Date(event.start_at))} – {dateFormat.format(new Date(event.end_at))}
-      </p>
-
-      {/* Indicador de Aforo Actual vs Capacidad Máxima (HU 1.2) */}
-      <div className="occupancy">
-        <div className="occupancy-header">
-          <span className="occupancy-title">Aforo Actual</span>
-          <span className="occupancy-value" aria-label={`Aforo: ${event.current_occupancy} de ${event.capacity}`}>
-            <strong>{event.current_occupancy}</strong> / {event.capacity}
+      <div className="meta-rows">
+        <p className="meta-row">
+          <IconMapPin size={14} />
+          <span>{event.location}</span>
+        </p>
+        <p className="meta-row">
+          <IconCalendar size={14} />
+          <span>
+            {dateFormat.format(new Date(event.start_at))} – {dateFormat.format(new Date(event.end_at))}
           </span>
-        </div>
+        </p>
+      </div>
 
+      <div className="occupancy">
+        <div className="occupancy-label">
+          <span>Aforo actual</span>
+          <strong className="tabular-nums">
+            {event.current_occupancy} / {event.capacity}{' '}
+            <span className="occupancy-pct">({percent}%)</span>
+          </strong>
+        </div>
         <div
-          className={`occupancy-bar ${barLevelClass}`}
+          className="occupancy-bar"
           role="progressbar"
           aria-valuenow={percent}
           aria-valuemin={0}
           aria-valuemax={100}
         >
-          <div style={{ width: `${Math.min(percent, 100)}%` }} />
+          <div style={{ width: `${percent}%` }} />
         </div>
-
-        <div className="occupancy-stats">
-          <span>{percent}% ocupado</span>
-          <span>{remaining} cupos restantes</span>
+        <div className="occupancy-submeta">
+          <span className="muted tabular-nums">
+            {remaining === 0 ? 'Sin cupos restantes' : `${remaining} cupos libres`}
+          </span>
         </div>
-
-        {/* Alerta visual cuando el aforo alcance el 90% o más (HU 1.2) */}
-        {isCritical && (
-          <div className="alert-card-box alert-card-danger" role="alert">
-            <span>🚨</span>
-            <div>
-              <strong>Alerta de Seguridad (≥90% de Aforo):</strong>
-              <br />
-              {percent >= 100
-                ? 'Capacidad máxima alcanzada. No se debe permitir más ingresos.'
-                : `Aforo al ${percent}%. Se ha alcanzado el umbral normativo del 90%.`}
-            </div>
-          </div>
-        )}
-        {isWarning && (
-          <div className="alert-card-box alert-card-warning" role="alert">
-            <span>⚠️</span>
-            <div>
-              <strong>Aviso preventivo:</strong> El evento está al {percent}% de capacidad.
-            </div>
-          </div>
-        )}
       </div>
     </article>
   )
@@ -111,16 +98,14 @@ export default function OrganizerHomePage() {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [lastSync, setLastSync] = useState(() => new Date())
   const [isLive, setIsLive] = useState(true)
-
-  // Validador / Simulador de escaneo en puerta
-  const [showScanner, setShowScanner] = useState(false)
+  const [lastSync, setLastSync] = useState(() => new Date())
+  const [showSimulator, setShowSimulator] = useState(false)
   const [qrInput, setQrInput] = useState('')
   const [scanLoading, setScanLoading] = useState(false)
   const [scanMessage, setScanMessage] = useState(null)
 
-  const reloadEvents = useCallback(() => {
+  const fetchEvents = useCallback(() => {
     return eventsApi
       .list()
       .then((data) => {
@@ -128,143 +113,149 @@ export default function OrganizerHomePage() {
         setLastSync(new Date())
         setError('')
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
+      .catch((err) => {
+        setError(err.message)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
   }, [])
 
-  // Carga inicial y polling en vivo cada 3 segundos (HU 1.2: actualización inmediata tras escaneo)
   useEffect(() => {
-    reloadEvents()
-    if (!isLive) return
-    const interval = setInterval(reloadEvents, 3000)
-    return () => clearInterval(interval)
-  }, [isLive, reloadEvents])
+    fetchEvents()
+  }, [fetchEvents])
 
-  const handleValidateTicket = async (e) => {
+  useEffect(() => {
+    if (!isLive) return undefined
+    const intervalId = setInterval(fetchEvents, 4000)
+    return () => clearInterval(intervalId)
+  }, [isLive, fetchEvents])
+
+  const handleSimulateValidation = async (e) => {
     e.preventDefault()
-    const trimmed = qrInput.trim()
-    if (!trimmed) return
-
-    if (trimmed.length < 32) {
-      setScanMessage({
-        type: 'error',
-        text: `El código ingresado ("${trimmed}") es solo una abreviación visual (8 caracteres). Debes ingresar el código QR completo de 36 caracteres (UUID). Puedes copiarlo con un clic desde "Mis entradas" del asistente.`,
-      })
-      return
-    }
+    const code = qrInput.trim()
+    if (!code) return
 
     setScanLoading(true)
     setScanMessage(null)
     try {
-      const res = await ticketsApi.validate(trimmed)
+      const res = await ticketsApi.validate(code)
+      soundFx.scanAllowed()
       setScanMessage({
         type: 'success',
-        text: `✅ ${res.message || 'Acceso Permitido'}: Entrada validada. Asistente: ${res.holder?.full_name || 'Asistente'} (${res.event?.name || 'Evento'}). El aforo se actualizó en vivo.`,
+        text: `Ingreso registrado: ${res.holder?.full_name ?? 'Asistente'} (${res.event?.name ?? 'Evento'})`,
       })
       setQrInput('')
-      await reloadEvents() // Actualiza inmediatamente el aforo
+      await fetchEvents()
     } catch (err) {
+      soundFx.error()
       setScanMessage({
         type: 'error',
-        text: `❌ ${err.message || 'Error al validar ticket.'}`,
+        text: err.message || 'No se pudo validar el código QR.',
       })
     } finally {
       setScanLoading(false)
     }
   }
 
-  // Identificar si algún evento está en alerta crítica (≥90%)
-  const criticalEvents = events.filter((ev) => ev.capacity && (ev.current_occupancy / ev.capacity) >= 0.9)
+  const totalOccupancy = events.reduce((sum, ev) => sum + ev.current_occupancy, 0)
+  const totalCapacity = events.reduce((sum, ev) => sum + ev.capacity, 0)
+  const criticalEvents = events.filter(
+    (ev) => ev.capacity && ev.current_occupancy / ev.capacity >= 0.9
+  )
 
   return (
     <section>
       <div className="page-header">
         <div>
+          <span className="eyebrow eyebrow-live">
+            <span className={`live-pulse-dot ${isLive ? '' : 'paused'}`} aria-hidden="true" />
+            {isLive ? `Telemetría en vivo · ${timeFormat.format(lastSync)}` : 'Telemetría en pausa'}
+          </span>
           <h1>Dashboard de Aforo</h1>
-          <p className="muted">Bienvenido, {user.first_name}. Monitorea en vivo el aforo y la capacidad máxima de tus eventos.</p>
+          <p className="muted">
+            Bienvenido, {user.first_name}. Monitorea en tiempo real el ingreso y la capacidad máxima de tus eventos.
+          </p>
         </div>
 
-        <div className="dashboard-controls">
-          <div className="live-pill" title="Actualización automática periódica en segundo plano">
-            <span className={`live-dot ${isLive ? 'active' : 'paused'}`} />
-            <span>{isLive ? 'En vivo' : 'En pausa'}</span>
-            <button
-              type="button"
-              className="btn-outline btn-sm"
-              style={{ padding: '0.15rem 0.45rem', fontSize: '0.75rem', marginLeft: '0.25rem' }}
-              onClick={() => setIsLive(!isLive)}
-            >
-              {isLive ? 'Pausar' : 'Reanudar'}
-            </button>
-          </div>
-
+        <div className="organizer-header-actions">
           <button
             type="button"
             className="btn btn-outline btn-sm"
-            onClick={reloadEvents}
-            title="Sincronizar aforo de inmediato"
+            onClick={() => {
+              soundFx.tap()
+              setIsLive((prev) => !prev)
+            }}
           >
-            🔄 Actualizar ({timeFormat.format(lastSync)})
+            {isLive ? 'Pausar vivo' : 'Reanudar vivo'}
           </button>
-
           <button
             type="button"
-            className="btn btn-outline btn-sm"
-            onClick={() => setShowScanner(!showScanner)}
+            className="btn btn-outline btn-sm btn-icon-label"
+            onClick={() => {
+              soundFx.tap()
+              setShowSimulator((prev) => !prev)
+            }}
           >
-            {showScanner ? 'Ocultar Escáner' : '📷 Simular Escaneo'}
+            <IconQrCode size={15} />
+            <span>{showSimulator ? 'Ocultar validador' : 'Validar por UUID'}</span>
           </button>
-
-          <Link to="/organizador/eventos/nuevo" className="btn btn-primary btn-sm">+ Crear evento</Link>
+          <Link
+            to="/organizador/eventos/nuevo"
+            className="btn btn-primary btn-sm btn-icon-label"
+            onClick={() => soundFx.tap()}
+          >
+            <IconPlus size={15} />
+            <span>Crear evento</span>
+          </Link>
         </div>
       </div>
 
-      {/* Alerta general si algún evento llegó al 90% de capacidad */}
       {criticalEvents.length > 0 && (
-        <div className="banner-aforo-alert is-danger" role="alert">
+        <div className="alert alert-error page-notice capacity-alert-banner" role="alert">
+          <IconAlert size={20} />
           <div>
-            <strong>🚨 ALERTA DE AFORO (≥90% DE CAPACIDAD ALCANZADA)</strong>
-            <p style={{ margin: '0.25rem 0 0', fontSize: '0.9rem' }}>
+            <strong>Alerta preventiva de aforo (≥90% de capacidad alcanzada)</strong>
+            <div className="capacity-alert-list">
               {criticalEvents.map((ev) => (
-                <span key={ev.id} style={{ display: 'block' }}>
-                  • El evento <strong>“{ev.name}”</strong> ha alcanzado{' '}
-                  <strong>{ev.current_occupancy} / {ev.capacity}</strong> personas (
-                  {Math.round((ev.current_occupancy / ev.capacity) * 100)}% de ocupación).
+                <span key={ev.id}>
+                  • <strong>{ev.name}</strong>: {ev.current_occupancy} / {ev.capacity} asistentes (
+                  {Math.round((ev.current_occupancy / ev.capacity) * 100)}%)
                 </span>
               ))}
-            </p>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Simulador rápido de escaneo en puerta para pruebas y evaluación */}
-      {showScanner && (
-        <div className="sim-box">
-          <div className="sim-header">
-            <strong>📷 Validador de Códigos QR en Puerta (Simulador en Vivo)</strong>
-            <span className="muted" style={{ fontSize: '0.8rem' }}>Permite probar el escaneo de entrada y ver el aforo cambiar al instante</span>
+      {showSimulator && (
+        <div className="card simulator-card page-notice">
+          <div className="simulator-header">
+            <strong>Validador rápido de tickets en puerta</strong>
+            <span className="muted">
+              Ingresa el UUID de un ticket para registrar su acceso y actualizar el aforo al instante.
+            </span>
           </div>
-
-          <form onSubmit={handleValidateTicket} className="sim-form">
+          <form className="scanner-manual-row" onSubmit={handleSimulateValidation}>
             <input
               type="text"
-              placeholder="Pega el UUID completo del QR (ej. 7d7d654d-a505-45c3-af00-1aa4e45e7dce)…"
+              placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
               value={qrInput}
               onChange={(e) => setQrInput(e.target.value)}
               disabled={scanLoading}
             />
-            <button type="submit" className="btn btn-primary" disabled={scanLoading || !qrInput.trim()}>
-              {scanLoading ? 'Validando…' : 'Validar Entrada'}
+            <button
+              type="submit"
+              className="btn btn-primary btn-sm"
+              disabled={scanLoading || !qrInput.trim()}
+            >
+              {scanLoading ? 'Validando…' : 'Registrar ingreso'}
             </button>
           </form>
-          <p className="muted" style={{ margin: '0.4rem 0 0', fontSize: '0.8rem' }}>
-            💡 <em>Tip:</em> Los códigos QR contienen un identificador UUID completo de 36 caracteres. En la pestaña de asistente haz clic sobre el código para copiarlo al portapapeles.
-          </p>
-
           {scanMessage && (
             <div
               className={`alert ${scanMessage.type === 'success' ? 'alert-success' : 'alert-error'}`}
-              style={{ marginTop: '0.75rem' }}
+              role="status"
             >
               {scanMessage.text}
             </div>
@@ -272,19 +263,54 @@ export default function OrganizerHomePage() {
         </div>
       )}
 
-      {created && <div className="alert alert-success" role="status">Evento “{created}” creado correctamente.</div>}
-      {error && <div className="alert alert-error" role="alert">{error}</div>}
+      {!loading && events.length > 0 && (
+        <div className="kpi-strip">
+          <div className="kpi-pill">
+            <span className="kpi-label">Eventos activos</span>
+            <strong className="kpi-value tabular-nums">{events.length}</strong>
+          </div>
+          <div className="kpi-pill">
+            <span className="kpi-label">Asistentes dentro</span>
+            <strong className="kpi-value tabular-nums">{totalOccupancy}</strong>
+          </div>
+          <div className="kpi-pill">
+            <span className="kpi-label">Capacidad total</span>
+            <strong className="kpi-value tabular-nums">{totalCapacity}</strong>
+          </div>
+        </div>
+      )}
+
+      {created && (
+        <div className="alert alert-success page-notice" role="status">
+          Evento “{created}” creado correctamente.
+        </div>
+      )}
+      {error && (
+        <div className="alert alert-error page-notice" role="alert">
+          {error}
+        </div>
+      )}
 
       {loading ? (
-        <p className="muted">Cargando eventos…</p>
+        <div className="event-grid" aria-busy="true">
+          <div className="card skeleton-card" />
+          <div className="card skeleton-card" />
+        </div>
       ) : events.length === 0 ? (
-        <div className="card placeholder">
-          Aún no has creado eventos. <Link to="/organizador/eventos/nuevo">Crea el primero</Link>.
+        <div className="card placeholder empty-state">
+          <IconCalendar size={28} />
+          <p>
+            Aún no has creado eventos.{' '}
+            <Link to="/organizador/eventos/nuevo" onClick={() => soundFx.tap()}>
+              Crea el primero
+            </Link>
+            .
+          </p>
         </div>
       ) : (
         <div className="event-grid">
-          {events.map((event) => (
-            <EventCard key={event.id} event={event} />
+          {events.map((event, index) => (
+            <EventCard key={event.id} event={event} index={index} />
           ))}
         </div>
       )}

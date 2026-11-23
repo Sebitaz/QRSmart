@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { eventsApi } from '../../api/events'
 import FormField from '../../components/FormField'
+import { IconArrowLeft, IconPlus } from '../../components/Icons'
+import { soundFx } from '../../utils/sound'
 
 const INITIAL_FORM = {
   name: '',
@@ -47,7 +49,10 @@ export default function CreateEventPage() {
     setError('')
     const clientErrors = validate(form)
     setErrors(clientErrors)
-    if (Object.keys(clientErrors).length) return
+    if (Object.keys(clientErrors).length) {
+      soundFx.error()
+      return
+    }
 
     setSubmitting(true)
     try {
@@ -58,8 +63,10 @@ export default function CreateEventPage() {
         end_at: new Date(form.end_at).toISOString(),
         capacity: Number(form.capacity),
       })
+      soundFx.success()
       navigate('/organizador', { state: { created: event.name } })
     } catch (err) {
+      soundFx.error()
       setErrors(err.fieldErrors ?? {})
       setError(err.status === 400 ? 'Revisa los datos del formulario.' : err.message)
     } finally {
@@ -69,7 +76,10 @@ export default function CreateEventPage() {
 
   return (
     <section className="narrow">
-      <Link to="/organizador" className="back-link">← Volver a mis eventos</Link>
+      <Link to="/organizador" className="back-link" onClick={() => soundFx.tap()}>
+        <IconArrowLeft size={15} />
+        <span>Volver a mis eventos</span>
+      </Link>
       <h1>Crear evento</h1>
       <p className="muted">Define los datos del evento y su capacidad máxima de personas.</p>
 
@@ -77,14 +87,17 @@ export default function CreateEventPage() {
         {error && <div className="alert alert-error" role="alert">{error}</div>}
         <FormField
           label="Nombre del evento" name="name" required maxLength={200}
+          placeholder="Ej. Encuentro de Innovación 2026"
           value={form.name} onChange={onChange} error={errors.name}
         />
         <FormField
           label="Descripción (opcional)" name="description" as="textarea" rows={3}
+          placeholder="Detalles clave para los asistentes…"
           value={form.description} onChange={onChange} error={errors.description}
         />
         <FormField
           label="Lugar" name="location" required maxLength={255}
+          placeholder="Ej. Auditorio Principal"
           value={form.location} onChange={onChange} error={errors.location}
         />
         <div className="form-row">
@@ -99,12 +112,16 @@ export default function CreateEventPage() {
         </div>
         <FormField
           label="Capacidad máxima (aforo)" name="capacity" type="number" min={1} step={1} required
+          placeholder="150"
           value={form.capacity} onChange={onChange} error={errors.capacity}
         />
         <div className="form-actions">
-          <Link to="/organizador" className="btn btn-outline">Cancelar</Link>
-          <button className="btn btn-primary" type="submit" disabled={submitting}>
-            {submitting ? 'Creando…' : 'Crear evento'}
+          <Link to="/organizador" className="btn btn-outline" onClick={() => soundFx.tap()}>
+            Cancelar
+          </Link>
+          <button className="btn btn-primary btn-icon-label" type="submit" disabled={submitting}>
+            <IconPlus size={16} />
+            <span>{submitting ? 'Creando…' : 'Crear evento'}</span>
           </button>
         </div>
       </form>
