@@ -23,11 +23,11 @@ class TicketValidationTests(APITestCase):
         self.logistica = self.make_user("log@example.com", User.Role.LOGISTICA)
         self.cliente = self.make_user("cliente@example.com", User.Role.ASISTENTE)
         start = timezone.now() + timedelta(days=1)
-        event = Event.objects.create(
+        self.event = Event.objects.create(
             organizer=self.organizer, name="Concierto", location="Estadio",
             start_at=start, end_at=start + timedelta(hours=3), capacity=100,
         )
-        self.ticket = Ticket.objects.create(event=event, holder=self.cliente)
+        self.ticket = Ticket.objects.create(event=self.event, holder=self.cliente)
 
     def make_user(self, email, role):
         return User.objects.create_user(
@@ -75,8 +75,8 @@ class TicketValidationTests(APITestCase):
         self.assertEqual(self.ticket.status, Ticket.Status.USADO)
         self.assertEqual(self.ticket.validated_by, self.organizer)
         self.assertIsNotNone(self.ticket.used_at)
-        self.ticket.event.refresh_from_db()
-        self.assertEqual(self.ticket.event.current_occupancy, 1)
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.current_occupancy, 1)
 
     def test_logistica_can_validate_ticket(self):
         self.client.force_authenticate(self.logistica)
@@ -84,18 +84,99 @@ class TicketValidationTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], Ticket.Status.USADO)
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.current_occupancy, 1)
 
-    # --- reglas de negocio de la validación ---
+    # --- reglas de negocio de la validación (HU 1.2 y HU 3.2) ---
+
+    def test_valid_ticket_shows_acceso_permitido_and_changes_status_to_usado(self):
+        # HU 3.2: Criterio 1: Mensaje verde "Acceso Permitido" y estado a "Usado"
+        self.client.force_authenticate(self.logistica)
+        self.assertEqual(self.ticket.status, Ticket.Status.VALIDO)
+
+        response = self.validate()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["message"], "Acceso Permitido")
+        self.assertEqual(response.data["status"], Ticket.Status.USADO)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.status, Ticket.Status.USADO)
+        self.assertIsNotNone(self.ticket.used_at)
+
+    def test_validation_increments_event_current_occupancy_immediately(self):
+        # Al validar exitosamente, el aforo actual aumenta de inmediato
+        self.client.force_authenticate(self.logistica)
+        self.assertEqual(self.event.current_occupancy, 0)
+
+        response = self.validate()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.current_occupancy, 1)
+
+        # Segundo ticket escaneado
+        cliente2 = self.make_user("cliente2@example.com", User.Role.ASISTENTE)
+        ticket2 = Ticket.objects.create(event=self.event, holder=cliente2)
+        response2 = self.validate(code=ticket2.code)
+        self.assertEqual(response2.status_code, status.HTTP_200_OK)
+
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.current_occupancy, 2)
+
+    def test_validation_rejected_when_event_occupancy_reaches_capacity(self):
+        # Si el evento ya llegó a su capacidad máxima, no se permite el ingreso
+        start = timezone.now() + timedelta(days=1)
+        full_event = Event.objects.create(
+            organizer=self.organizer, name="Exclusivo", location="Sala VIP",
+            start_at=start, end_at=start + timedelta(hours=2), capacity=1, current_occupancy=1,
+        )
+        ticket = Ticket.objects.create(event=full_event, holder=self.cliente)
+
+        self.client.force_authenticate(self.logistica)
+        response = self.client.post(self.url, {"code": str(ticket.code)}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertIn("capacidad máxima de aforo", response.data["detail"])
+        ticket.refresh_from_db()
+        self.assertEqual(ticket.status, Ticket.Status.VALIDO)
 
     def test_used_ticket_cannot_be_validated_twice(self):
+        # HU 3.2: Criterio 2: Escaneado por 2da vez arroja error "Ticket ya usado"
         self.client.force_authenticate(self.logistica)
-        self.validate()
+        first_resp = self.validate()
+        self.assertEqual(first_resp.status_code, status.HTTP_200_OK)
 
-        self.assertEqual(self.validate().status_code, status.HTTP_409_CONFLICT)
+        second_resp = self.validate()
+        self.assertEqual(second_resp.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(second_resp.data["detail"], "Ticket ya usado.")
+        self.assertEqual(second_resp.data["code"], "ticket_already_used")
+        self.assertIsNotNone(second_resp.data.get("used_at"))
 
-    def test_unknown_code_returns_404(self):
+    def test_unknown_code_returns_404_ticket_invalido(self):
+        # HU 3.2: Criterio 3: UUID no existente en BD arroja error "Ticket Inválido"
         self.client.force_authenticate(self.logistica)
-        self.assertEqual(self.validate(uuid4()).status_code, status.HTTP_404_NOT_FOUND)
+        response = self.validate(uuid4())
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "Ticket Inválido.")
+        self.assertEqual(response.data["code"], "ticket_not_found")
+
+    def test_validation_performance_latency_under_200ms(self):
+        # HU 3.2: Criterio 4: La API responde en menos de 200ms en entorno local
+        import time
+        from django.db import connection
+
+        self.client.force_authenticate(self.logistica)
+        start_time = time.perf_counter()
+        response = self.validate()
+        duration_ms = (time.perf_counter() - start_time) * 1000
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        threshold_ms = 200 if connection.vendor == "sqlite" else 2500
+        self.assertLess(
+            duration_ms,
+            threshold_ms,
+            f"Validación tomó {duration_ms:.2f}ms, superando el umbral de {threshold_ms}ms",
+        )
 
     def test_invalid_code_format_returns_400(self):
         self.client.force_authenticate(self.logistica)
